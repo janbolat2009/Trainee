@@ -38,7 +38,7 @@ export interface Coach {
   secondarySports: string[];
   location: string;
   isVerified: boolean;
-  verificationBadge: string; // e.g. "PRO LICENSED MASTER"
+  verificationBadge: string;
   rating: number;
   reviewCount: number;
   yearsExperience: number;
@@ -52,7 +52,7 @@ export interface Coach {
   contactNumber: string;
   email: string;
   availability: 'Immediate' | 'Limited Spots' | 'Waitlist';
-  matchScore?: number; // Calculated dynamically in AI Matchmaking
+  matchScore?: number;
   matchReasons?: string[];
 }
 
@@ -109,4 +109,126 @@ export interface ChatMessage {
     label: string;
     tab: string;
   };
+}
+
+export interface QAItem {
+  id: string;
+  question: string;
+  answer: string;
+  category: string;
+  authorName?: string;
+  authorRole?: string;
+  date?: string;
+  upvotes: number;
+}
+
+export interface DashboardSession {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  coachName: string;
+  coachAvatar: string;
+  sport: string;
+  duration: string;
+  status: 'Completed' | 'Upcoming' | 'In Progress';
+  improvementMetric: string;
+  improvementDelta: string;
+  focusArea: string;
+}
+
+export interface ImprovementMetric {
+  category: string;
+  currentValue: string;
+  previousValue: string;
+  percentageGain: number;
+  trend: 'up' | 'steady';
+}
+
+export type TrainingFormat = 'online' | 'offline' | 'hybrid';
+export type ListingStatus = 'active' | 'paused' | 'archived';
+export type ApplicationStatus = 'pending' | 'accepted' | 'declined';
+export type ProgressFlag = 'normal' | 'attention' | 'risk';
+
+export interface CoachListing {
+  id: string;
+  coachId: string;
+  sport: string;
+  specialization: string;
+  athleteLevel: string;
+  trainingFormat: TrainingFormat;
+  price: number;
+  billingPeriod: 'session' | 'month';
+  description: string;
+  coachingStyle: string;
+  achievements: string[];
+  location: string | null;
+  mediaUrls: string[];
+  status: ListingStatus;
+  createdAt: string;
+}
+
+export interface ListingApplication {
+  id: string;
+  listingId: string;
+  coachId: string;
+  athleteId: string;
+  athleteName: string;
+  athleteAvatar: string | null;
+  message: string;
+  status: ApplicationStatus;
+  createdAt: string;
+}
+
+export interface CoachStudent {
+  athleteId: string;
+  name: string;
+  avatar: string | null;
+  sport: string | null;
+  joinedAt: string;
+}
+
+export interface AthleteProgressLog {
+  id: string;
+  athleteId: string;
+  coachId: string;
+  loggedAt: string;
+  metricType: string;
+  value: number | null;
+  notes: string | null;
+  wellbeing: number | null;
+  fatigue: number | null;
+  painLevel: number | null;
+  sleepHours: number | null;
+  flag: ProgressFlag;
+}
+
+// ── Realtime In-App Chat Interfaces ──────────────────────────────────────────
+
+export interface DirectMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  text: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface Conversation {
+  id: string;
+  listingId: string | null;
+  applicationId: string | null;
+  participant1: string;
+  participant2: string;
+  createdAt: string;
+  updatedAt: string;
+  // Joined/populated metadata
+  otherUser?: {
+    id: string;
+    name: string;
+    avatar: string | null;
+    role: UserRole;
+  };
+  lastMessage?: DirectMessage;
+  unreadCount?: number;
 }

@@ -3,6 +3,7 @@ import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { MobileNav } from './components/MobileNav';
 import { Hero } from './components/Home/Hero';
+import { DashboardSection } from './components/Home/DashboardSection';
 import { HowItWorks } from './components/Home/HowItWorks';
 import { FeaturedCoaches } from './components/Home/FeaturedCoaches';
 import { DualCTA } from './components/Home/DualCTA';
@@ -12,16 +13,27 @@ import { CoachProfileView } from './components/Profile/CoachProfileView';
 import { AthleteProfileView } from './components/Profile/AthleteProfileView';
 import { OnboardingModal } from './components/Onboarding/OnboardingModal';
 import { AICopilotDrawer } from './components/AICopilot/AICopilotDrawer';
-import { ShieldCheck, Sparkles, Heart } from 'lucide-react';
+import { ChatDrawer } from './components/Chat/ChatDrawer';
+import { ShieldCheck } from 'lucide-react';
+import { LoginModal } from './components/Auth/LoginModal';
+import { AnimatePresence } from 'framer-motion';
+
+// Coach-specific views
+import { CoachDashboardView } from './components/Coach/CoachDashboardView';
+import { CoachListingsView } from './components/Coach/CoachListingsView';
+import { CoachApplicationsView } from './components/Coach/CoachApplicationsView';
+import { CoachStudentsView } from './components/Coach/CoachStudentsView';
+import { CreateListingModal } from './components/Coach/CreateListingModal';
 
 const MainContent: React.FC = () => {
-  const { activeTab, setActiveTab } = useApp();
+  const { activeTab } = useApp();
 
   return (
     <main className="min-h-screen">
       {activeTab === 'home' && (
         <>
           <Hero />
+          <DashboardSection />
           <HowItWorks />
           <FeaturedCoaches />
           <DualCTA />
@@ -32,71 +44,65 @@ const MainContent: React.FC = () => {
       {activeTab === 'matchmaking' && <MatchmakingView />}
       {activeTab === 'coach-profile' && <CoachProfileView />}
       {activeTab === 'athlete-profile' && <AthleteProfileView />}
+
+      {/* Coach-specific routes */}
+      {activeTab === 'coach-dashboard' && <CoachDashboardView />}
+      {activeTab === 'coach-listings' && <CoachListingsView />}
+      {activeTab === 'coach-applications' && <CoachApplicationsView />}
+      {activeTab === 'coach-students' && <CoachStudentsView />}
     </main>
   );
 };
 
 const Footer: React.FC = () => {
-  const { setActiveTab } = useApp();
+  const { setActiveTab, currentProfile } = useApp();
+  const isCoach = currentProfile?.role === 'coach';
+  const ownProfileTab = isCoach ? 'coach-dashboard' : 'athlete-profile';
 
   return (
-    <footer className="border-t border-brand-border/60 bg-brand-black text-brand-muted py-12 text-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
-        
-        <div className="space-y-3">
-          <div className="flex items-center space-x-2">
-            <span className="font-extrabold text-lg tracking-widest text-white uppercase font-sans">
-              TRAINEE<span className="text-brand-accent">™</span>
-            </span>
-          </div>
-          <p className="text-zinc-400 text-xs leading-relaxed max-w-xs">
-            The premier AI-powered marketplace connecting ambitious athletes with elite verified sports coaches.
-          </p>
-          <div className="flex items-center space-x-1.5 text-[11px] text-brand-accent font-mono">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>VERIFIED AUDIT GUARANTEE</span>
-          </div>
+    <footer className="border-t border-white/[0.07] px-4 py-8 text-xs text-zinc-500 sm:px-6">
+      <div className="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2"><span className="font-semibold tracking-[0.14em] text-zinc-200">TRAINEE</span><span>© 2026</span></div>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <button onClick={() => setActiveTab('discovery')} className="transition hover:text-white">Coaches</button>
+          {!isCoach && (
+            <button onClick={() => setActiveTab('matchmaking')} className="transition hover:text-white">Find a match</button>
+          )}
+          {isCoach && (
+            <button onClick={() => setActiveTab('coach-listings')} className="transition hover:text-white">My Listings</button>
+          )}
+          <button onClick={() => setActiveTab(ownProfileTab)} className="transition hover:text-white">My profile</button>
+          <span className="hidden items-center gap-1.5 text-zinc-400 sm:flex"><ShieldCheck className="h-3.5 w-3.5 text-brand-accent" />Verified profiles</span>
         </div>
-
-        <div>
-          <div className="font-bold text-white uppercase font-mono tracking-wider mb-3">Platform</div>
-          <ul className="space-y-2">
-            <li><button onClick={() => setActiveTab('discovery')} className="hover:text-white transition">Explore Verified Coaches</button></li>
-            <li><button onClick={() => setActiveTab('matchmaking')} className="hover:text-white transition">AI Matchmaker Engine</button></li>
-            <li><button onClick={() => setActiveTab('athlete-profile')} className="hover:text-white transition">Athlete Hub</button></li>
-          </ul>
-        </div>
-
-        <div>
-          <div className="font-bold text-white uppercase font-mono tracking-wider mb-3">Sports Categories</div>
-          <ul className="space-y-2">
-            <li><span className="text-zinc-400">Track & Field / Sprinting</span></li>
-            <li><span className="text-zinc-400">Tennis Mechanics</span></li>
-            <li><span className="text-zinc-400">Football Positional IQ</span></li>
-            <li><span className="text-zinc-400">Combat & Striking</span></li>
-            <li><span className="text-zinc-400">Aquatics & Swimming</span></li>
-          </ul>
-        </div>
-
-        <div>
-          <div className="font-bold text-white uppercase font-mono tracking-wider mb-3">Legal & Security</div>
-          <ul className="space-y-2 text-zinc-500 font-mono text-[11px]">
-            <li><span>Terms of Service</span></li>
-            <li><span>Privacy Policy</span></li>
-            <li><span>Certification Audit Protocol</span></li>
-            <li><span>© 2026 TRAINEE Inc. All rights reserved.</span></li>
-          </ul>
-        </div>
-
       </div>
     </footer>
+  );
+};
+
+// Global CreateListingModal — accessible from anywhere via context
+const GlobalCoachModals: React.FC = () => {
+  const { isCreateListingOpen, setIsCreateListingOpen, currentProfile } = useApp();
+  if (currentProfile?.role !== 'coach') return null;
+
+  return (
+    <AnimatePresence>
+      {isCreateListingOpen && (
+        <CreateListingModal
+          isOpen={isCreateListingOpen}
+          onClose={() => setIsCreateListingOpen(false)}
+          onSaved={() => {
+            setIsCreateListingOpen(false);
+          }}
+        />
+      )}
+    </AnimatePresence>
   );
 };
 
 export function App() {
   return (
     <AppProvider>
-      <div className="min-h-screen bg-brand-black text-brand-light flex flex-col font-sans selection:bg-brand-accent selection:text-black">
+      <div className="min-h-screen bg-brand-black text-brand-light flex flex-col font-sans selection:bg-brand-accent/30 selection:text-white">
         <Navbar />
         <div className="flex-1">
           <MainContent />
@@ -104,7 +110,10 @@ export function App() {
         <Footer />
         <MobileNav />
         <OnboardingModal />
+        <LoginModal />
         <AICopilotDrawer />
+        <ChatDrawer />
+        <GlobalCoachModals />
       </div>
     </AppProvider>
   );

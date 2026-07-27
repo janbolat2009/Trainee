@@ -1,16 +1,24 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
-import { X, Check, ArrowRight, ArrowLeft, Trophy, ShieldCheck, Building2, Sparkles, Lock, Mail, User } from 'lucide-react';
+import { supabase } from '../../lib/supabase'; // поправь путь под свою структуру
+import { X, Check, ArrowRight, ArrowLeft, Trophy, ShieldCheck, Building2, Sparkles, Lock, Mail, User, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
 export const OnboardingModal: React.FC = () => {
-  const { isOnboardingOpen, setIsOnboardingOpen, setUserRole, setActiveTab } = useApp();
+  const {
+    isOnboardingOpen,
+    setIsOnboardingOpen,
+    refreshAuthenticatedProfile,
+    setIsCreateListingOpen,
+  } = useApp();
 
   const [step, setStep] = useState(1);
   const [selectedRole, setSelectedRole] = useState<UserRole>('athlete');
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   // Form fields
   const [formData, setFormData] = useState({
     fullName: '',
@@ -24,33 +32,125 @@ export const OnboardingModal: React.FC = () => {
 
   if (!isOnboardingOpen) return null;
 
-  const handleNext = () => {
+  const validateStep2 = () => {
+    if (!formData.fullName.trim()) return 'Please enter your full name.';
+    if (!formData.email.trim()) return 'Please enter your email.';
+    if (formData.password.length < 6) return 'Password must be at least 6 characters.';
+    return null;
+  };
+
+  const handleNext = async () => {
+    setErrorMsg(null);
+
+    // Валидация перед переходом со step 2 (email/password)
+    if (step === 2) {
+      const validationError = validateStep2();
+      if (validationError) {
+        setErrorMsg(validationError);
+        return;
+      }
+    }
+
     if (step < 4) {
       setStep(step + 1);
-    } else {
-      // Finalize setup
+      return;
+    }
+
+    // === STEP 4 -> Финальная регистрация ===
+    if (!supabase) {
+      setErrorMsg('Supabase client is not initialized. Check your .env file and restart the dev server.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // 1. Регистрация в Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (authError) {
+        console.error('Auth error:', authError);
+        setErrorMsg(authError.message);
+        setIsSubmitting(false);
+        return;
+      }
+
+      const authUser = authData.user;
+      const authUserId = authUser?.id;
+
+      if (!authUserId || !authUser) {
+        setErrorMsg('Account created, but no user ID returned. Try again.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 2. Запись профиля в таблицу profiles
+      const { data: insertedProfile, error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          auth_user_id: authUserId,
+          role: selectedRole,
+          name: formData.fullName,
+          email: formData.email,
+          sport: formData.sport,
+          skill_level: formData.skillLevel,
+          location: formData.location,
+          bio: formData.bio,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        setErrorMsg(
+          `Profile was not saved: ${insertError.message}. ` +
+          `If "Confirm email" is enabled in Supabase Auth settings, you need to confirm your email before the profile can be created.`
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log('Profile created:', insertedProfile);
+
+      // The context reloads the exact profile by auth_user_id and routes by its stored role.
+      const profileLoaded = await refreshAuthenticatedProfile(authUser);
+      if (!profileLoaded) {
+        setErrorMsg('Your account was created, but its profile could not be loaded. Please sign in again.');
+        return;
+      }
+
+      // Успех
       confetti({
         particleCount: 80,
         spread: 70,
         origin: { y: 0.6 }
       });
-      setUserRole(selectedRole);
+
       setIsOnboardingOpen(false);
+
+      // For coaches: prompt to create first listing after a short delay
       if (selectedRole === 'coach') {
-        setActiveTab('coach-profile');
-      } else {
-        setActiveTab('athlete-profile');
+        setTimeout(() => { setIsCreateListingOpen(true); }, 800);
       }
+    } catch (err) {
+      console.error('Unexpected error during registration:', err);
+      setErrorMsg('Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleBack = () => {
+    setErrorMsg(null);
     if (step > 1) setStep(step - 1);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      
+
       {/* Modal Container */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -58,7 +158,7 @@ export const OnboardingModal: React.FC = () => {
         exit={{ opacity: 0, scale: 0.95 }}
         className="w-full max-w-xl bg-brand-card border border-brand-border rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden"
       >
-        
+
         {/* Close Button */}
         <button
           onClick={() => setIsOnboardingOpen(false)}
@@ -85,7 +185,7 @@ export const OnboardingModal: React.FC = () => {
 
         {/* Step Content Switcher */}
         <AnimatePresence mode="wait">
-          
+
           {/* STEP 1: Select Role */}
           {step === 1 && (
             <motion.div
@@ -105,7 +205,7 @@ export const OnboardingModal: React.FC = () => {
               </div>
 
               <div className="space-y-3">
-                
+
                 {/* Role 1: Athlete */}
                 <div
                   onClick={() => setSelectedRole('athlete')}
@@ -191,12 +291,13 @@ export const OnboardingModal: React.FC = () => {
                 </p>
               </div>
 
-              {/* Social Login Buttons */}
+              {/* Social Login Buttons — пока просто визуальные, реальный OAuth не подключён */}
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={handleNext}
-                  className="py-2.5 px-4 rounded-xl bg-brand-elevated border border-brand-border text-xs font-semibold text-white hover:bg-white/10 transition flex items-center justify-center space-x-2"
+                  disabled
+                  title="Google OAuth not connected yet"
+                  className="py-2.5 px-4 rounded-xl bg-brand-elevated border border-brand-border text-xs font-semibold text-white opacity-50 cursor-not-allowed transition flex items-center justify-center space-x-2"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24">
                     <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.3 8.9 5 12 5z" />
@@ -209,8 +310,9 @@ export const OnboardingModal: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={handleNext}
-                  className="py-2.5 px-4 rounded-xl bg-brand-elevated border border-brand-border text-xs font-semibold text-white hover:bg-white/10 transition flex items-center justify-center space-x-2"
+                  disabled
+                  title="Apple OAuth not connected yet"
+                  className="py-2.5 px-4 rounded-xl bg-brand-elevated border border-brand-border text-xs font-semibold text-white opacity-50 cursor-not-allowed transition flex items-center justify-center space-x-2"
                 >
                   <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
                     <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.87c.68-.82 1.14-1.97.99-3.12-1 .04-2.19.67-2.88 1.47-.62.72-1.17 1.89-.99 3.01 1.11.09 2.22-.54 2.88-1.36z" />
@@ -261,7 +363,7 @@ export const OnboardingModal: React.FC = () => {
                     <Lock className="w-4 h-4 text-brand-muted absolute left-3.5 top-3" />
                     <input
                       type="password"
-                      placeholder="••••••••••••"
+                      placeholder="At least 6 characters"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       className="w-full bg-brand-dark border border-brand-border rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-brand-accent"
@@ -390,12 +492,21 @@ export const OnboardingModal: React.FC = () => {
 
         </AnimatePresence>
 
+        {/* Ошибка */}
+        {errorMsg && (
+          <div className="mt-4 p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-start space-x-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
         {/* Modal Controls (Back & Next) */}
         <div className="mt-8 pt-4 border-t border-brand-border/60 flex items-center justify-between">
           {step > 1 ? (
             <button
               onClick={handleBack}
-              className="px-4 py-2 rounded-xl bg-white/5 border border-brand-border text-xs font-semibold text-brand-muted hover:text-white transition flex items-center space-x-1.5"
+              disabled={isSubmitting}
+              className="px-4 py-2 rounded-xl bg-white/5 border border-brand-border text-xs font-semibold text-brand-muted hover:text-white transition flex items-center space-x-1.5 disabled:opacity-50"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Back</span>
@@ -404,9 +515,10 @@ export const OnboardingModal: React.FC = () => {
 
           <button
             onClick={handleNext}
-            className="px-6 py-2.5 rounded-xl bg-white text-black font-bold text-xs hover:bg-zinc-200 transition flex items-center space-x-2 shadow-glow-white ml-auto"
+            disabled={isSubmitting}
+            className="px-6 py-2.5 rounded-xl bg-white text-black font-bold text-xs hover:bg-zinc-200 transition flex items-center space-x-2 shadow-glow-white ml-auto disabled:opacity-50"
           >
-            <span>{step === 4 ? 'Complete Registration' : 'Continue'}</span>
+            <span>{isSubmitting ? 'Saving...' : step === 4 ? 'Complete Registration' : 'Continue'}</span>
             {step === 4 ? <Sparkles className="w-4 h-4 fill-black" /> : <ArrowRight className="w-4 h-4" />}
           </button>
         </div>

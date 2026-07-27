@@ -8,9 +8,15 @@
   }
   
   body {
-    background-color: #050505;
-    color: #E5E5EA;
+    background-color: #08090b;
+    color: #e8eaed;
+    background-image:
+      radial-gradient(circle at 12% -8%, rgba(84, 214, 208, 0.10), transparent 28rem),
+      radial-gradient(circle at 90% 12%, rgba(129, 111, 255, 0.09), transparent 25rem);
+    font-feature-settings: 'ss01' on, 'cv11' on;
   }
+
+  button, a { -webkit-tap-highlight-color: transparent; }
 }
 
 /* Custom scrollbar for high-tech aesthetic */
@@ -32,19 +38,21 @@
   background: #3A3A40;
 }
 
-/* Glassmorphism helpers */
+/* Quiet, layered liquid-glass surfaces. */
 .glass-panel {
-  background: rgba(18, 18, 21, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.025));
+  backdrop-filter: blur(22px) saturate(135%);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 16px 44px rgba(0,0,0,.16);
 }
 
 .glass-panel-elevated {
-  background: rgba(24, 24, 28, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(145deg, rgba(29, 33, 39, 0.82), rgba(13, 15, 18, 0.74));
+  backdrop-filter: blur(28px) saturate(140%);
+  -webkit-backdrop-filter: blur(28px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 24px 70px rgba(0,0,0,.28);
 }
 
 .glass-pill {
@@ -54,8 +62,36 @@
 }
 
 .grid-bg {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.liquid-shell {
+  background: linear-gradient(180deg, rgba(12, 14, 17, 0.72), rgba(8, 9, 11, 0.96));
+}
+
+.liquid-orb {
+  filter: blur(2px);
+  animation: drift 14s ease-in-out infinite alternate;
+}
+
+.section-eyebrow {
+  color: rgba(207, 255, 249, 0.72);
+  font-size: 0.69rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.soft-divider { border-color: rgba(255,255,255,.09); }
+
+@keyframes drift {
+  from { transform: translate3d(-1.2rem, -0.7rem, 0) scale(1); }
+  to { transform: translate3d(1rem, 1.3rem, 0) scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; }
 }
 
 /* Custom clip utility for sports badge */

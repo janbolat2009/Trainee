@@ -1,4 +1,4 @@
-import { Coach, Athlete, Review, QuizQuestion } from '../types';
+import { Coach, Athlete, Review, QuizQuestion, DashboardSession, ImprovementMetric, QAItem } from '../types';
 
 export const MOCK_COACHES: Coach[] = [
   {
@@ -382,5 +382,146 @@ export const INITIAL_COPILOT_MESSAGES = [
       "Help me optimize my athlete profile",
       "Show me coaches under $100/hr"
     ]
+  }
+];
+
+export const MOCK_SESSIONS: DashboardSession[] = [
+  {
+    id: 'sess-1',
+    title: 'Block Acceleration & Drive Phase Mechanics',
+    date: 'Today, 14:00',
+    time: '60 min',
+    coachName: 'Marcus Vance',
+    coachAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format&fit=crop',
+    sport: 'Track & Field',
+    duration: '60 min',
+    status: 'In Progress',
+    improvementMetric: 'Sprint Drive Reaction',
+    improvementDelta: '+14.2% faster',
+    focusArea: 'Ground Contact Kinetic Force'
+  },
+  {
+    id: 'sess-2',
+    title: 'Serve Motion Kinematics & Ball Spin Audit',
+    date: 'Tomorrow, 10:30',
+    time: '75 min',
+    coachName: 'Elena Rostova',
+    coachAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=600&auto=format&fit=crop',
+    sport: 'Tennis',
+    duration: '75 min',
+    status: 'Upcoming',
+    improvementMetric: 'Serve RPM & Velocity',
+    improvementDelta: '+11.8% topspin',
+    focusArea: 'Pronation & Kinetic Chain'
+  },
+  {
+    id: 'sess-3',
+    title: 'High-Pressing Positional IQ & Half-Space Drills',
+    date: 'Yesterday, 16:00',
+    time: '60 min',
+    coachName: 'Darius Thorne',
+    coachAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600&auto=format&fit=crop',
+    sport: 'Football',
+    duration: '60 min',
+    status: 'Completed',
+    improvementMetric: 'Decision Time Under Pressure',
+    improvementDelta: '-0.35s latency',
+    focusArea: 'Scan Rate & Orientation'
+  },
+  {
+    id: 'sess-4',
+    title: 'Explosive Counter-Striking Footwork',
+    date: '20 Jul 2026',
+    time: '90 min',
+    coachName: 'Kai Tanaka',
+    coachAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=600&auto=format&fit=crop',
+    sport: 'Combat Sports',
+    duration: '90 min',
+    status: 'Completed',
+    improvementMetric: 'Power Transfer Efficiency',
+    improvementDelta: '+22.5% impact',
+    focusArea: 'Hip Pivot Torque'
+  }
+];
+
+export const MOCK_IMPROVEMENTS: ImprovementMetric[] = [
+  {
+    category: '100m Sprint Velocity',
+    currentValue: '10.38s',
+    previousValue: '10.58s',
+    percentageGain: 18.5,
+    trend: 'up'
+  },
+  {
+    category: 'Kinetic Force Output',
+    currentValue: '3.42 kN',
+    previousValue: '2.95 kN',
+    percentageGain: 15.9,
+    trend: 'up'
+  },
+  {
+    category: 'Aerobic Recovery Threshold',
+    currentValue: '62.4 ml/kg',
+    previousValue: '54.1 ml/kg',
+    percentageGain: 15.3,
+    trend: 'up'
+  },
+  {
+    category: 'Tactical Decision Speed',
+    currentValue: '180ms',
+    previousValue: '240ms',
+    percentageGain: 25.0,
+    trend: 'up'
+  }
+];
+
+export const MOCK_COACH_QA: QAItem[] = [
+  {
+    id: 'qa-c-1',
+    question: 'How do virtual video breakdown sessions work?',
+    answer: 'Athletes upload raw smartphone video (front & side angles). I perform a frame-by-frame biomechanical breakdown with telestrator overlays, custom voiceover analysis, and personalized corrective drills delivered within 24 hours.',
+    category: 'Logistics',
+    authorName: 'Alex R.',
+    date: '3 days ago',
+    upvotes: 24
+  },
+  {
+    id: 'qa-c-2',
+    question: 'What equipment do I need for our initial consultation?',
+    answer: 'Just standard training kit, sport shoes, and a phone with camera functionality. For track sprint sessions, access to a standard 400m track or open field is ideal.',
+    category: 'Equipment',
+    authorName: 'Sarah M.',
+    date: '1 week ago',
+    upvotes: 19
+  },
+  {
+    id: 'qa-c-3',
+    question: 'What is your session rescheduling and cancellation policy?',
+    answer: 'Sessions can be rescheduled free of charge up to 12 hours before start time via the TRAINEE™ platform. Emergency credits are granted on a case-by-case basis.',
+    category: 'Policy',
+    authorName: 'Jordan K.',
+    date: '2 weeks ago',
+    upvotes: 15
+  }
+];
+
+export const MOCK_ATHLETE_QA: QAItem[] = [
+  {
+    id: 'qa-a-1',
+    question: 'What is your main athletic performance focus right now?',
+    answer: 'I am currently targeting sub-10.30s sprint performance in the 100m dash and qualifying for the 2026 National Athletic Trials.',
+    category: 'Goals',
+    authorName: 'Coach Marcus',
+    date: '4 days ago',
+    upvotes: 12
+  },
+  {
+    id: 'qa-a-2',
+    question: 'Are you open to hybrid on-field & remote video coaching?',
+    answer: 'Yes! I prefer bi-weekly on-track sessions supplemented by weekly video mechanics audits.',
+    category: 'Training Preference',
+    authorName: 'Coach Elena',
+    date: '2 weeks ago',
+    upvotes: 9
   }
 ];

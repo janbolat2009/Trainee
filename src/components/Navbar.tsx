@@ -1,115 +1,135 @@
 import React from 'react';
-import { useApp, ActiveTab } from '../context/AppContext';
-import { Sparkles, Search, User, ShieldCheck, Zap, ArrowRight, SlidersHorizontal } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Bot, LogOut, MessageSquare, User, Bell, PlusSquare } from 'lucide-react';
+
+import { type ActiveTab, useApp } from '../context/AppContext';
 
 export const Navbar: React.FC = () => {
-  const { 
-    activeTab, 
-    setActiveTab, 
-    setIsOnboardingOpen, 
-    isCopilotOpen, 
-    setIsCopilotOpen,
-    userRole,
-    setUserRole
+  const {
+    activeTab, setActiveTab, setIsOnboardingOpen, setIsLoginOpen,
+    isCopilotOpen, setIsCopilotOpen, isChatOpen, setIsChatOpen,
+    isAuthenticated, currentUser, currentProfile, logout, unreadCount,
+    totalUnreadChatCount, setIsCreateListingOpen,
   } = useApp();
 
-  const navItems: { id: ActiveTab; label: string; icon: React.ReactNode; badge?: string }[] = [
-    { id: 'home', label: 'Home', icon: <Zap className="w-4 h-4" /> },
-    { id: 'discovery', label: 'Explore Coaches', icon: <Search className="w-4 h-4" /> },
-    { id: 'matchmaking', label: 'AI Matchmaker', icon: <Sparkles className="w-4 h-4 text-brand-accent" />, badge: 'AI' },
-    { id: 'athlete-profile', label: 'Athlete Hub', icon: <User className="w-4 h-4" /> },
-  ];
+  const isCoach = currentProfile?.role === 'coach';
+  const profileTab: ActiveTab = isCoach ? 'coach-dashboard' : 'athlete-profile';
+  const profileName = currentProfile?.profile.name ?? currentUser?.email?.split('@')[0] ?? 'Account';
+  const profileAvatar = currentProfile?.profile.avatar;
+
+  const navItems: { id: ActiveTab; label: string }[] = isCoach
+    ? [
+        { id: 'home', label: 'Home' },
+        { id: 'coach-listings', label: 'My Listings' },
+        { id: 'coach-applications', label: 'Applications' },
+        { id: 'coach-students', label: 'Students' },
+        { id: 'coach-dashboard', label: 'Dashboard' },
+      ]
+    : [
+        { id: 'home', label: 'Home' },
+        { id: 'discovery', label: 'Coaches' },
+        { id: 'matchmaking', label: 'Match' },
+        { id: profileTab, label: isAuthenticated ? 'Profile' : 'Athlete hub' },
+      ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-brand-border/60 bg-brand-black/80 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        
-        {/* Brand Logo */}
-        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('home')}>
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-white via-zinc-200 to-zinc-500 p-[1px]">
-            <div className="w-full h-full bg-brand-black rounded-[7px] flex items-center justify-center font-extrabold text-white text-lg tracking-tighter">
-              TR<span className="text-brand-accent">.</span>
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-extrabold text-lg tracking-widest text-white uppercase font-sans">
-              TRAINEE<span className="text-brand-accent">™</span>
-            </span>
-            <span className="text-[9px] font-mono tracking-wider text-brand-muted uppercase -mt-1 hidden sm:inline-block">
-              AI MATCHMAKING MARKETPLACE
-            </span>
-          </div>
-        </div>
+    <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5">
+      <div className="glass-panel mx-auto flex h-14 max-w-7xl items-center justify-between rounded-2xl px-3 sm:px-4">
+        <button onClick={() => setActiveTab('home')} className="group flex items-center gap-2.5" aria-label="Go to homepage">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-sm font-black tracking-tighter text-black transition-transform duration-300 group-hover:rotate-6">T.</span>
+          <span className="hidden text-sm font-extrabold tracking-[0.16em] text-white sm:inline">TRAINEE</span>
+        </button>
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
+        <nav className="hidden items-center gap-1 rounded-xl bg-black/20 p-1 md:flex">
           {navItems.map((item) => {
-            const isActive = activeTab === item.id;
+            const selected = activeTab === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`relative px-3.5 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 flex items-center space-x-2 ${
-                  isActive 
-                    ? 'text-white bg-brand-card border border-brand-border' 
-                    : 'text-brand-muted hover:text-white hover:bg-white/5'
-                }`}
+                className={`relative rounded-lg px-3 py-1.5 text-xs font-medium transition ${selected ? 'text-white' : 'text-zinc-400 hover:text-zinc-100'}`}
               >
-                {item.icon}
-                <span>{item.label}</span>
-                {item.badge && (
-                  <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold bg-brand-accent/20 text-brand-accent rounded border border-brand-accent/30">
-                    {item.badge}
-                  </span>
-                )}
-                {isActive && (
-                  <motion.div
-                    layoutId="navIndicator"
-                    className="absolute bottom-0 left-2 right-2 h-[2px] bg-brand-accent rounded-full"
-                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                  />
-                )}
+                {selected && <motion.span layoutId="navbar-active" className="absolute inset-0 rounded-lg bg-white/10" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
+                <span className="relative">{item.label}</span>
               </button>
             );
           })}
         </nav>
 
-        {/* Action Controls */}
-        <div className="flex items-center space-x-2 sm:space-x-3">
-          
-          {/* Quick Role Toggle pill */}
-          <button
-            onClick={() => setUserRole(userRole === 'athlete' ? 'coach' : 'athlete')}
-            className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider bg-brand-card border border-brand-border text-brand-muted hover:text-white hover:border-zinc-700 transition"
-            title="Toggle viewing state between Athlete & Coach"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse" />
-            <span>Mode: <strong className="text-white">{userRole}</strong></span>
-          </button>
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Coach quick action: Add listing */}
+          {isCoach && isAuthenticated && (
+            <button
+              onClick={() => setIsCreateListingOpen(true)}
+              className="hidden sm:flex items-center gap-1.5 rounded-lg border border-brand-accent/30 bg-brand-accent/10 px-3 py-1.5 text-xs font-semibold text-brand-accent transition hover:bg-brand-accent/20"
+              title="Create new listing"
+            >
+              <PlusSquare className="h-3.5 w-3.5" />
+              <span>New Listing</span>
+            </button>
+          )}
 
-          {/* AI Copilot Trigger Button */}
+          {/* In-App Chat Trigger */}
+          {isAuthenticated && (
+            <button
+              onClick={() => setIsChatOpen(!isChatOpen)}
+              className={`relative flex h-8 w-8 items-center justify-center rounded-lg border transition ${
+                isChatOpen
+                  ? 'border-brand-accent/40 bg-brand-accent/15 text-brand-accent'
+                  : 'border-white/10 text-zinc-300 hover:bg-white/10 hover:text-white'
+              }`}
+              title="Direct Messages"
+              aria-label="Open Chat"
+            >
+              <MessageSquare className="h-4 w-4" />
+              {totalUnreadChatCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand-accent text-[9px] font-bold text-black">
+                  {totalUnreadChatCount > 9 ? '9+' : totalUnreadChatCount}
+                </span>
+              )}
+            </button>
+          )}
+
+          {/* Notifications bell (coach only) */}
+          {isCoach && isAuthenticated && (
+            <button
+              onClick={() => setActiveTab('coach-applications')}
+              className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-zinc-300 transition hover:bg-white/10 hover:text-white"
+              aria-label="Notifications"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+          )}
+
           <button
             onClick={() => setIsCopilotOpen(!isCopilotOpen)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1.5 border ${
-              isCopilotOpen 
-                ? 'bg-brand-accent/20 text-brand-accent border-brand-accent/50 shadow-glow-accent'
-                : 'bg-brand-card text-brand-light border-brand-border hover:bg-white/10'
-            }`}
+            className={`flex h-8 w-8 items-center justify-center rounded-lg border transition ${isCopilotOpen ? 'border-brand-accent/40 bg-brand-accent/15 text-brand-accent' : 'border-white/10 text-zinc-300 hover:bg-white/10 hover:text-white'}`}
+            aria-label="Toggle copilot"
           >
-            <Sparkles className="w-3.5 h-3.5 text-brand-accent animate-spin-slow" />
-            <span className="hidden sm:inline">AI Copilot</span>
+            <Bot className="h-4 w-4" />
           </button>
 
-          {/* Join / Registration CTA */}
-          <button
-            onClick={() => setIsOnboardingOpen(true)}
-            className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-white text-black hover:bg-zinc-200 transition flex items-center space-x-1.5 shadow-glow-white"
-          >
-            <span>Get Started</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-
+          {isAuthenticated ? (
+            <>
+              <button onClick={() => setActiveTab(profileTab)} className="flex items-center gap-2 rounded-lg px-1.5 py-1 transition hover:bg-white/10" title="Open your profile">
+                {profileAvatar ? <img src={profileAvatar} alt="" className="h-7 w-7 rounded-lg object-cover" /> : <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10"><User className="h-4 w-4" /></span>}
+                <span className="hidden max-w-28 truncate text-xs font-medium text-zinc-100 sm:inline">{profileName}</span>
+              </button>
+              <button onClick={() => void logout()} className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-white/10 hover:text-white" aria-label="Log out">
+                <LogOut className="h-4 w-4" />
+              </button>
+            </>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => setIsLoginOpen(true)} className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-300 transition hover:text-white">Log in</button>
+              <button onClick={() => setIsOnboardingOpen(true)} className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-black transition hover:bg-zinc-200">Create account</button>
+            </div>
+          )}
         </div>
       </div>
     </header>

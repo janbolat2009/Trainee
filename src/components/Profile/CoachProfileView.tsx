@@ -1,29 +1,74 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { VerificationBadgeModal } from './VerificationBadgeModal';
-import { MOCK_REVIEWS } from '../../data/mockData';
-import { ShieldCheck, Star, MapPin, Award, CheckCircle2, MessageSquare, ArrowLeft, Bookmark, Calendar, Sparkles, Phone, Mail } from 'lucide-react';
+import { MOCK_COACH_QA, MOCK_REVIEWS } from '../../data/mockData';
+import { QASection } from './QASection';
+import { ShieldCheck, Star, MapPin, Award, CheckCircle2, ArrowLeft, Bookmark, Calendar, Phone, Mail, MessageSquare, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getOrCreateConversation, sendMessage } from '../../services/chatService';
 
 export const CoachProfileView: React.FC = () => {
-  const { selectedCoach, setActiveTab, savedCoachIds, toggleSaveCoach } = useApp();
+  const {
+    selectedCoach, setActiveTab, savedCoachIds, toggleSaveCoach,
+    isAuthenticated, currentProfile, setIsLoginOpen, setIsChatOpen, addNotification,
+  } = useApp();
+
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [selectedTier, setSelectedTier] = useState<number>(1);
+  const [isBookingSending, setIsBookingSending] = useState(false);
   const [isBookingSent, setIsBookingSent] = useState(false);
 
   const isSaved = savedCoachIds.includes(selectedCoach.id);
 
-  const handleBooking = () => {
-    setIsBookingSent(true);
-    setTimeout(() => {
-      setIsBookingSent(false);
-    }, 4000);
+  const handleBooking = async () => {
+    // 1. If user is guest / not authenticated, prompt login
+    if (!isAuthenticated || !currentProfile) {
+      setIsLoginOpen(true);
+      return;
+    }
+
+    setIsBookingSending(true);
+
+    try {
+      const athleteId = currentProfile.profile.id;
+      const coachId = selectedCoach.id;
+
+      // 2. Automatically create/get conversation in Supabase
+      const conv = await getOrCreateConversation(athleteId, coachId);
+      if (conv) {
+        const tier = selectedCoach.pricingTiers[selectedTier];
+        const tierName = tier?.name ?? 'Consultation';
+        const tierPrice = tier?.price ?? selectedCoach.hourlyRate;
+
+        // 3. Send initial booking message in Chat
+        await sendMessage(
+          conv.id,
+          athleteId,
+          `Hello Coach ${selectedCoach.name}! I would like to request booking for the "${tierName}" package ($${tierPrice}) in ${selectedCoach.sport}.`
+        );
+
+        setIsBookingSent(true);
+        addNotification({
+          type: 'success',
+          title: 'Booking chat opened!',
+          message: `Real-time chat conversation started with ${selectedCoach.name}.`,
+        });
+
+        // 4. Immediately open Realtime Chat Drawer
+        setTimeout(() => {
+          setIsChatOpen(true);
+          setIsBookingSent(false);
+        }, 1200);
+      }
+    } catch (err) {
+      console.error('Error handling booking chat:', err);
+    } finally {
+      setIsBookingSending(false);
+    }
   };
 
   return (
-    <div className="bg-brand-black min-h-screen pb-24">
-      
-      {/* Back Button Bar */}
+    <div className="liquid-shell min-h-screen pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <button
           onClick={() => setActiveTab('discovery')}
@@ -34,30 +79,32 @@ export const CoachProfileView: React.FC = () => {
         </button>
       </div>
 
-      {/* Cover Header Image */}
-      <div className="relative w-full h-48 sm:h-64 md:h-80 bg-brand-dark mt-2 border-y border-brand-border/60 overflow-hidden">
+      <div className="relative mt-3 h-48 w-full overflow-hidden border-y border-white/[0.08] bg-brand-dark sm:h-64 md:h-72">
         {selectedCoach.coverImage ? (
-          <img 
-            src={selectedCoach.coverImage} 
-            alt="Cover" 
+          <img
+            src={selectedCoach.coverImage}
+            alt="Cover"
             className="w-full h-full object-cover opacity-60"
           />
         ) : (
           <div className="w-full h-full grid-bg" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-brand-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0b0d10] via-[#0b0d10]/40 to-transparent" />
       </div>
 
-      {/* Profile Header Block */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 -mt-20">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-brand-border/60">
-          
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45 }}
+          className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-brand-border/60"
+        >
           <div className="flex flex-col sm:flex-row items-start sm:items-end space-y-4 sm:space-y-0 sm:space-x-6">
             <div className="relative">
-              <img 
-                src={selectedCoach.avatar} 
+              <img
+                src={selectedCoach.avatar}
                 alt={selectedCoach.name}
-                className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl object-cover border-4 border-brand-black shadow-2xl" 
+                className="h-28 w-28 rounded-3xl object-cover ring-4 ring-[#0b0d10] shadow-2xl sm:h-36 sm:w-36"
               />
               {selectedCoach.isVerified && (
                 <div className="absolute -bottom-2 -right-2 p-2 rounded-xl bg-brand-accent text-black shadow-glow-accent">
@@ -68,7 +115,7 @@ export const CoachProfileView: React.FC = () => {
 
             <div className="space-y-2">
               <div className="flex items-center space-x-3">
-                <h1 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+                <h1 className="text-2xl font-semibold tracking-[-0.04em] text-white sm:text-3xl">
                   {selectedCoach.name}
                 </h1>
                 <button
@@ -99,13 +146,12 @@ export const CoachProfileView: React.FC = () => {
             </div>
           </div>
 
-          {/* Action CTAs */}
           <div className="flex items-center space-x-3">
             <button
               onClick={() => toggleSaveCoach(selectedCoach.id)}
               className={`p-3 rounded-xl border transition ${
-                isSaved 
-                  ? 'bg-brand-accent/20 border-brand-accent text-brand-accent' 
+                isSaved
+                  ? 'bg-brand-accent/20 border-brand-accent text-brand-accent'
                   : 'bg-brand-card border-brand-border text-brand-muted hover:text-white'
               }`}
             >
@@ -113,17 +159,20 @@ export const CoachProfileView: React.FC = () => {
             </button>
 
             <button
-              onClick={handleBooking}
-              className="px-6 py-3 rounded-xl bg-white text-black font-bold text-xs uppercase tracking-wider hover:bg-zinc-200 transition shadow-glow-white flex items-center space-x-2"
+              onClick={() => void handleBooking()}
+              disabled={isBookingSending}
+              className="flex items-center space-x-2 rounded-xl bg-white px-5 py-3 text-xs font-semibold text-black transition hover:bg-zinc-200 shadow-glow-white disabled:opacity-60"
             >
-              <Calendar className="w-4 h-4" />
-              <span>Book Consultation</span>
+              {isBookingSending ? (
+                <Loader2 className="w-4 h-4 animate-spin text-black" />
+              ) : (
+                <Calendar className="w-4 h-4" />
+              )}
+              <span>{isBookingSending ? 'Creating Chat...' : 'Book Consultation'}</span>
             </button>
           </div>
+        </motion.div>
 
-        </div>
-
-        {/* Booking Notification Banner */}
         {isBookingSent && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -132,39 +181,58 @@ export const CoachProfileView: React.FC = () => {
           >
             <div className="flex items-center space-x-2">
               <CheckCircle2 className="w-4 h-4" />
-              <span>Consultation request dispatched to {selectedCoach.name}! Coach will contact you within 2 hours.</span>
+              <span>Consultation request sent! Opening direct chat conversation with {selectedCoach.name}...</span>
             </div>
           </motion.div>
         )}
 
-        {/* Experience Metrics Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-8">
-          <div className="glass-panel p-4 rounded-2xl border border-brand-border text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="glass-panel p-4 rounded-2xl border border-brand-border text-center"
+          >
             <div className="text-2xl font-black text-white font-mono">{selectedCoach.yearsExperience} YRS</div>
             <div className="text-[11px] text-brand-muted uppercase font-medium">Coaching Experience</div>
-          </div>
-          <div className="glass-panel p-4 rounded-2xl border border-brand-border text-center">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+            className="glass-panel p-4 rounded-2xl border border-brand-border text-center"
+          >
             <div className="text-2xl font-black text-white font-mono">{selectedCoach.athletesTrained}+</div>
             <div className="text-[11px] text-brand-muted uppercase font-medium">Athletes Trained</div>
-          </div>
-          <div className="glass-panel p-4 rounded-2xl border border-brand-border text-center">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="glass-panel p-4 rounded-2xl border border-brand-border text-center"
+          >
             <div className="text-2xl font-black text-brand-accent font-mono">{selectedCoach.coachingStyle}</div>
             <div className="text-[11px] text-brand-muted uppercase font-medium">Primary Style</div>
-          </div>
-          <div className="glass-panel p-4 rounded-2xl border border-brand-border text-center">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+            className="glass-panel p-4 rounded-2xl border border-brand-border text-center"
+          >
             <div className="text-2xl font-black text-white font-mono">{selectedCoach.availability}</div>
             <div className="text-[11px] text-brand-muted uppercase font-medium">Current Status</div>
-          </div>
+          </motion.div>
         </div>
 
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Left Column - Bio, Achievements, Certs */}
           <div className="lg:col-span-7 space-y-8">
-            
-            {/* Bio Card */}
-            <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-brand-border space-y-4">
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.05 }}
+              className="glass-panel p-6 sm:p-8 rounded-3xl border border-brand-border space-y-4"
+            >
               <h2 className="text-lg font-extrabold text-white uppercase tracking-tight">
                 Coaching Philosophy & Background
               </h2>
@@ -185,10 +253,14 @@ export const CoachProfileView: React.FC = () => {
                   ))}
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            {/* Achievements List */}
-            <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-brand-border space-y-4">
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.1 }}
+              className="glass-panel p-6 sm:p-8 rounded-3xl border border-brand-border space-y-4"
+            >
               <h2 className="text-lg font-extrabold text-white uppercase tracking-tight flex items-center space-x-2">
                 <Award className="w-5 h-5 text-brand-accent" />
                 <span>Track Record & Breakthroughs</span>
@@ -201,10 +273,14 @@ export const CoachProfileView: React.FC = () => {
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
-            {/* Verified Certifications Trigger Card */}
-            <div className="glass-panel p-6 rounded-3xl border border-brand-border flex items-center justify-between">
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.15 }}
+              className="glass-panel p-6 rounded-3xl border border-brand-border flex items-center justify-between"
+            >
               <div className="flex items-center space-x-3">
                 <ShieldCheck className="w-8 h-8 text-brand-accent" />
                 <div>
@@ -218,10 +294,14 @@ export const CoachProfileView: React.FC = () => {
               >
                 Inspect Credentials
               </button>
-            </div>
+            </motion.div>
 
-            {/* Reviews Section */}
-            <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-brand-border space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.2 }}
+              className="glass-panel p-6 sm:p-8 rounded-3xl border border-brand-border space-y-6"
+            >
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-extrabold text-white uppercase tracking-tight">
                   Verified Athlete Reviews
@@ -251,15 +331,29 @@ export const CoachProfileView: React.FC = () => {
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.25 }}
+            >
+              <QASection
+                initialItems={MOCK_COACH_QA}
+                title="Coach Q&A Bar"
+                subtitle="Direct answers on scheduling, coaching style, and athlete support."
+                roleName="Coach"
+              />
+            </motion.div>
           </div>
 
-          {/* Right Column - Pricing Tiers Card & Contact */}
           <div className="lg:col-span-5 space-y-6">
-            
-            {/* Pricing Tiers Card */}
-            <div className="glass-panel-elevated p-6 rounded-3xl border border-brand-border space-y-6 sticky top-24">
+            <motion.div
+              initial={{ opacity: 0, x: 18 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.45, delay: 0.1 }}
+              className="glass-panel-elevated p-6 rounded-3xl border border-brand-border space-y-6 sticky top-24"
+            >
               <div className="flex items-center justify-between pb-4 border-b border-brand-border/60">
                 <h3 className="font-black text-white text-lg uppercase">Pricing Packages</h3>
                 <span className="text-xs font-mono text-brand-accent">TRANSPARENT RATES</span>
@@ -273,7 +367,7 @@ export const CoachProfileView: React.FC = () => {
                       key={tier.name}
                       onClick={() => setSelectedTier(idx)}
                       className={`p-4 rounded-2xl border cursor-pointer transition ${
-                        isSelected 
+                        isSelected
                           ? 'bg-brand-card border-brand-accent shadow-glow-accent'
                           : 'bg-brand-dark/50 border-brand-border hover:border-zinc-700'
                       }`}
@@ -285,7 +379,7 @@ export const CoachProfileView: React.FC = () => {
                         </div>
                       </div>
                       <p className="text-xs text-brand-muted mb-3">{tier.description}</p>
-                      
+
                       <div className="space-y-1.5 pt-2 border-t border-brand-border/40">
                         {tier.features.map((feat, fIdx) => (
                           <div key={fIdx} className="flex items-center space-x-2 text-[11px] text-zinc-300">
@@ -300,13 +394,14 @@ export const CoachProfileView: React.FC = () => {
               </div>
 
               <button
-                onClick={handleBooking}
-                className="w-full py-3.5 rounded-xl bg-white text-black font-extrabold text-xs uppercase tracking-wider hover:bg-zinc-200 transition shadow-glow-white"
+                onClick={() => void handleBooking()}
+                disabled={isBookingSending}
+                className="w-full py-3.5 rounded-xl bg-white text-black font-extrabold text-xs uppercase tracking-wider hover:bg-zinc-200 transition shadow-glow-white flex items-center justify-center space-x-2 disabled:opacity-60"
               >
-                Select Tier & Request Booking
+                <MessageSquare className="w-4 h-4 text-black" />
+                <span>{isBookingSending ? 'Starting Chat...' : 'Select Tier & Request Booking'}</span>
               </button>
 
-              {/* Direct Contact Info */}
               <div className="pt-4 border-t border-brand-border/60 space-y-2 text-xs font-mono text-brand-muted">
                 <div className="flex items-center space-x-2">
                   <Phone className="w-3.5 h-3.5 text-zinc-400" />
@@ -317,16 +412,11 @@ export const CoachProfileView: React.FC = () => {
                   <span>{selectedCoach.email}</span>
                 </div>
               </div>
-
-            </div>
-
+            </motion.div>
           </div>
-
         </div>
-
       </div>
 
-      {/* Verification Modal */}
       <VerificationBadgeModal
         coach={selectedCoach}
         isOpen={isVerificationOpen}
