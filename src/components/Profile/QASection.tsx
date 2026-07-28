@@ -130,32 +130,36 @@ export const QASection: React.FC<QASectionProps> = ({
               layout
               className="rounded-2xl bg-brand-dark border border-brand-border/60 overflow-hidden transition"
             >
-              <button
-                onClick={() => handleToggle(item.id)}
-                className="w-full p-4 text-left flex items-start justify-between gap-4 hover:bg-white/5 transition"
-              >
-                <div className="flex items-start space-x-3">
-                  <div className="p-2 rounded-xl bg-brand-card border border-brand-border text-brand-accent mt-0.5">
-                    <MessageSquare className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-white text-xs sm:text-sm">
-                      {item.question}
+              <div className="w-full p-4 flex items-start justify-between gap-4 hover:bg-white/5 transition">
+                <button
+                  type="button"
+                  onClick={() => handleToggle(item.id)}
+                  className="flex-1 text-left"
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className="p-2 rounded-xl bg-brand-card border border-brand-border text-brand-accent mt-0.5">
+                      <MessageSquare className="w-4 h-4" />
                     </div>
-                    <div className="flex items-center space-x-3 text-[10px] font-mono text-brand-muted mt-1">
-                      <span className="text-zinc-400">{item.category}</span>
-                      {item.date && (
-                        <>
-                          <span>•</span>
-                          <span>{item.date}</span>
-                        </>
-                      )}
+                    <div>
+                      <div className="font-bold text-white text-xs sm:text-sm">
+                        {item.question}
+                      </div>
+                      <div className="flex items-center space-x-3 text-[10px] font-mono text-brand-muted mt-1">
+                        <span className="text-zinc-400">{item.category}</span>
+                        {item.date && (
+                          <>
+                            <span>•</span>
+                            <span>{item.date}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                </button>
 
                 <div className="flex items-center space-x-3 flex-shrink-0">
                   <button
+                    type="button"
                     onClick={(e) => handleUpvote(item.id, e)}
                     className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-brand-card border border-brand-border text-[11px] font-mono text-zinc-300 hover:text-white hover:border-zinc-500 transition"
                   >
@@ -163,13 +167,17 @@ export const QASection: React.FC<QASectionProps> = ({
                     <span>{item.upvotes}</span>
                   </button>
 
-                  <div className={`p-1 rounded-lg text-brand-muted transition-transform duration-200 ${
-                    isExpanded ? 'rotate-180 text-white' : ''
-                  }`}>
+                  <button
+                    type="button"
+                    onClick={() => handleToggle(item.id)}
+                    className={`p-1 rounded-lg text-brand-muted transition-transform duration-200 ${
+                      isExpanded ? 'rotate-180 text-white' : ''
+                    }`}
+                  >
                     <ChevronDown className="w-4 h-4" />
-                  </div>
+                  </button>
                 </div>
-              </button>
+              </div>
 
               <AnimatePresence>
                 {isExpanded && (

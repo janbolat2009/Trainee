@@ -232,3 +232,84 @@ export interface Conversation {
   lastMessage?: DirectMessage;
   unreadCount?: number;
 }
+
+// ── AI Matchmaking Types ──────────────────────────────────────────────────────
+
+export interface AIDimensionScores {
+  sport: number;
+  skill: number;
+  goal: number;
+  style: number;
+  budget: number;
+  schedule: number;
+  experience: number;
+  communication: number;
+  growth: number;
+  overall: number;
+}
+
+export interface AICoachRecommendation {
+  coachId: string;
+  matchScore: number;
+  confidenceScore: number;
+  compatibilitySummary: string;
+  dimensionScores: AIDimensionScores;
+  whyFits: string[];
+  disadvantages: string[];
+  trainingExpectations: string;
+  successPotential: string;
+}
+
+export interface AIMatchmakingResponse {
+  success: boolean;
+  recommendations: AICoachRecommendation[];
+  meta: {
+    processingTimeMs: number;
+    model: string;
+    coachesAnalyzed: number;
+    rateLimitRemaining: number;
+  };
+  error?: string;
+}
+
+/** Coach type extended with AI-generated match data */
+export interface AIMatchedCoach extends Coach {
+  matchScore: number;
+  confidenceScore: number;
+  compatibilitySummary: string;
+  dimensionScores: AIDimensionScores;
+  matchReasons: string[];        // maps to whyFits
+  disadvantages: string[];
+  trainingExpectations: string;
+  successPotential: string;
+}
+
+// ── AI Copilot Types ──────────────────────────────────────────────────────────
+
+export interface CopilotConversationMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface AICopilotResponse {
+  success: boolean;
+  message: string;
+  suggestedPrompts: string[];
+  actionLink?: {
+    label: string;
+    tab: string;
+  };
+  meta: {
+    processingTimeMs: number;
+    model: string;
+    rateLimitRemaining: number;
+  };
+  error?: string;
+}
+
+export type AIServiceError =
+  | { type: 'auth'; message: string }
+  | { type: 'rate_limit'; message: string; resetAt?: string }
+  | { type: 'network'; message: string }
+  | { type: 'parse'; message: string }
+  | { type: 'server'; message: string };

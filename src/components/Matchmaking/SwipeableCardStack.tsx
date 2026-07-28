@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Coach } from '../../types';
+import type { AIMatchedCoach } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { CompatibilityRing } from './CompatibilityRing';
-import { ShieldCheck, Star, MapPin, Check, X, ArrowRight, Sparkles, MessageCircle } from 'lucide-react';
+import { ShieldCheck, Star, MapPin, Check, X, ArrowRight, Sparkles, AlertTriangle, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface CardStackProps {
-  matchedCoaches: Coach[];
+  matchedCoaches: AIMatchedCoach[];
   onRestart: () => void;
 }
 
@@ -56,14 +56,20 @@ export const SwipeableCardStack: React.FC<CardStackProps> = ({ matchedCoaches, o
     );
   }
 
-  // Generate dynamic mock AI match reasons
-  const matchReasons = currentCoach.matchReasons || [
-    `100% alignment in ${currentCoach.sport} mechanics and high-acceleration programming.`,
-    `Coaching methodology (${currentCoach.coachingStyle}) directly addresses your target goal.`,
-    `Transparent fee (${currentCoach.hourlyRate}/hr) falls within your specified budget limit.`
-  ];
+  const matchReasons = currentCoach.matchReasons?.length
+    ? currentCoach.matchReasons
+    : [
+        `${currentCoach.sport} specialist with ${currentCoach.yearsExperience} years of coaching experience.`,
+        `Coaching methodology (${currentCoach.coachingStyle}) aligns with your training preferences.`,
+        `Hourly rate ($${currentCoach.hourlyRate}/session) is within the standard range.`,
+      ];
 
-  const score = currentCoach.matchScore || 98;
+  const score = currentCoach.matchScore ?? 85;
+  const confidence = currentCoach.confidenceScore ?? 0;
+  const summary = currentCoach.compatibilitySummary ?? '';
+  const disadvantages = currentCoach.disadvantages ?? [];
+  const trainingExpectations = currentCoach.trainingExpectations ?? '';
+  const successPotential = currentCoach.successPotential ?? '';
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
@@ -120,8 +126,29 @@ export const SwipeableCardStack: React.FC<CardStackProps> = ({ matchedCoaches, o
           </div>
         </div>
 
+        {/* AI Compatibility Summary */}
+        {summary && (
+          <div className="mt-4 p-3 rounded-xl bg-brand-accent/10 border border-brand-accent/20 text-xs text-zinc-200 leading-relaxed">
+            <span className="text-brand-accent font-mono font-bold">AI: </span>{summary}
+          </div>
+        )}
+
+        {/* Confidence + Dimension Scores */}
+        {confidence > 0 && (
+          <div className="mt-3 flex items-center space-x-2">
+            <span className="text-[10px] font-mono text-brand-muted uppercase">Confidence</span>
+            <div className="flex-1 h-1 bg-brand-border rounded-full overflow-hidden">
+              <div
+                className="h-full bg-brand-accent"
+                style={{ width: `${confidence}%` }}
+              />
+            </div>
+            <span className="text-[10px] font-mono text-brand-accent font-bold">{confidence}%</span>
+          </div>
+        )}
+
         {/* Why This Coach Fits You - AI Breakdown */}
-        <div className="py-6 space-y-3">
+        <div className="py-4 space-y-3">
           <div className="text-xs font-mono uppercase text-brand-accent flex items-center space-x-1.5">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Why This Match Fits Your Profile</span>
@@ -136,6 +163,43 @@ export const SwipeableCardStack: React.FC<CardStackProps> = ({ matchedCoaches, o
             ))}
           </div>
         </div>
+
+        {/* Disadvantages */}
+        {disadvantages.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="text-[10px] font-mono uppercase text-amber-400 flex items-center space-x-1">
+              <AlertTriangle className="w-3 h-3" />
+              <span>Potential Considerations</span>
+            </div>
+            {disadvantages.map((d, i) => (
+              <div key={i} className="p-2.5 rounded-lg bg-amber-400/5 border border-amber-400/20 text-xs text-amber-200/80 flex items-start space-x-2">
+                <span className="text-amber-400 font-bold">!</span>
+                <span>{d}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Training Expectations & Success Potential */}
+        {(trainingExpectations || successPotential) && (
+          <div className="mt-3 grid grid-cols-1 gap-2">
+            {trainingExpectations && (
+              <div className="p-3 rounded-xl bg-brand-dark border border-brand-border/60 space-y-1">
+                <div className="text-[10px] font-mono uppercase text-brand-muted">Training Expectations</div>
+                <p className="text-xs text-zinc-300 leading-relaxed">{trainingExpectations}</p>
+              </div>
+            )}
+            {successPotential && (
+              <div className="p-3 rounded-xl bg-brand-dark border border-brand-border/60 space-y-1">
+                <div className="text-[10px] font-mono uppercase text-emerald-400 flex items-center space-x-1">
+                  <TrendingUp className="w-3 h-3" />
+                  <span>Success Potential</span>
+                </div>
+                <p className="text-xs text-zinc-300 leading-relaxed">{successPotential}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Pricing & Details Link */}
         <div className="pt-4 border-t border-brand-border/60 flex items-center justify-between">
