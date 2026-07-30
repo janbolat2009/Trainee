@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { QASection } from './QASection';
 import { MOCK_ATHLETE_QA } from '../../data/mockData';
 import { Trophy, Target, Activity, MapPin, Sparkles, Edit3, User, LogIn, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { WellbeingModal } from '../Support/WellbeingModal';
 
 export const AthleteProfileView: React.FC = () => {
-  const { selectedAthlete, setActiveTab, setIsOnboardingOpen, setIsLoginOpen, isAuthenticated, currentProfile } = useApp();
+  const { selectedAthlete, setActiveTab, setIsOnboardingOpen, setIsLoginOpen, isAuthenticated, currentProfile, addNotification } = useApp();
+  const [isWellbeingOpen, setIsWellbeingOpen] = useState(false);
 
   // If user is guest (unauthenticated), show clear login/register CTA banner instead of dummy mock data
   if (!isAuthenticated) {
@@ -99,7 +101,7 @@ export const AthleteProfileView: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => setIsOnboardingOpen(true)}
               className="flex items-center space-x-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-xs font-medium text-white transition hover:bg-white/[0.1]"
@@ -114,6 +116,13 @@ export const AthleteProfileView: React.FC = () => {
             >
               <Sparkles className="w-4 h-4 fill-black" />
               <span>Explore Coaches</span>
+            </button>
+
+            <button
+              onClick={() => setIsWellbeingOpen(true)}
+              className="flex items-center space-x-1.5 rounded-xl border border-brand-accent bg-brand-accent/10 px-4 py-2.5 text-xs font-semibold text-brand-accent transition hover:bg-brand-accent/20"
+            >
+              <span>Wellbeing Check-In</span>
             </button>
           </div>
         </motion.div>
@@ -232,6 +241,17 @@ export const AthleteProfileView: React.FC = () => {
           </div>
         </div>
       </div>
+      <WellbeingModal
+        isOpen={isWellbeingOpen}
+        onClose={() => setIsWellbeingOpen(false)}
+        onSubmitWellbeing={(tag, note) => {
+          addNotification({
+            type: 'info',
+            title: 'Wellbeing check-in submitted',
+            message: `Your ${tag} note has been saved. A coach can follow up if needed.`,
+          });
+        }}
+      />
     </div>
   );
 };

@@ -116,6 +116,20 @@ export const AICopilotDrawer: React.FC = () => {
     const query = (textToSend ?? input).trim();
     if (!query) return;
 
+    if (!isAuthenticated) {
+      const authMsg: ChatMessage = {
+        id: `auth-${Date.now()}`,
+        sender: 'assistant',
+        text: 'Please sign in to use AI Copilot. Log in to continue with personalized AI assistance.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        suggestedPrompts: ['Sign in'],
+      };
+      setMessages((prev) => [...prev, authMsg]);
+      setIsTyping(false);
+      setIsLoginOpen(true);
+      return;
+    }
+
     // Append user message
     const userMsg: ChatMessage = {
       id: `msg-${Date.now()}`,

@@ -16,6 +16,13 @@ const normalizeMessage = (row: Row): DirectMessage => ({
   createdAt: str(row.created_at),
 });
 
+const isBlockedChatContent = (text: string): boolean => {
+  const normalized = text.trim();
+  if (/@/.test(normalized)) return true;
+  const digitSequence = normalized.replace(/[^0-9]/g, '');
+  return digitSequence.length >= 7;
+};
+
 // ── Get or Create Conversation between 2 Profile IDs ───────────────────────────
 
 export const getOrCreateConversation = async (
@@ -188,7 +195,8 @@ export const sendMessage = async (
   senderId: string,
   text: string
 ): Promise<DirectMessage | null> => {
-  if (!supabase || !text.trim()) return null;
+  const trimmed = text.trim();
+  if (!supabase || !trimmed || isBlockedChatContent(trimmed)) return null;
   const client = supabase;
 
   const { data, error } = await client
@@ -196,7 +204,7 @@ export const sendMessage = async (
     .insert({
       conversation_id: conversationId,
       sender_id: senderId,
-      text: text.trim(),
+      text: trimmed,
       is_read: false,
     })
     .select()

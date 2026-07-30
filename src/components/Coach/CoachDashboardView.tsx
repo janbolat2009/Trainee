@@ -3,11 +3,14 @@ import { useApp } from '../../context/AppContext';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, FileText, Users, Bell, Plus, TrendingUp, Clock, CheckCircle2, AlertTriangle,
-  ChevronRight, Sparkles, ArrowRight,
+  ChevronRight, Sparkles, ArrowRight, Calendar,
 } from 'lucide-react';
 import { fetchCoachListings, fetchCoachApplications } from '../../services/coachListingService';
 import { fetchCoachStudents } from '../../services/progressService';
-import type { CoachListing, ListingApplication, CoachStudent } from '../../types';
+import { fetchCoachBookings, saveConsultationReminder, saveConsultationFeedback } from '../../services/bookingService';
+import { ReminderModal } from '../Notifications/ReminderModal';
+import { PostConsultationFeedbackModal } from '../Feedback/PostConsultationFeedbackModal';
+import type { CoachListing, ListingApplication, CoachStudent, ConsultationBooking } from '../../types';
 
 const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string | number; sub?: string; color?: string }> = ({
   icon, label, value, sub, color = 'text-white',
@@ -27,7 +30,11 @@ export const CoachDashboardView: React.FC = () => {
   const [listings, setListings] = useState<CoachListing[]>([]);
   const [applications, setApplications] = useState<ListingApplication[]>([]);
   const [students, setStudents] = useState<CoachStudent[]>([]);
+  const [bookings, setBookings] = useState<ConsultationBooking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedReminderBooking, setSelectedReminderBooking] = useState<ConsultationBooking | null>(null);
+  const [selectedFeedbackBooking, setSelectedFeedbackBooking] = useState<ConsultationBooking | null>(null);
+  const [prevPendingBookings, setPrevPendingBookings] = useState(0);
 
   const coachName = currentProfile?.profile.name ?? 'Coach';
   const coachProfileId = currentProfile?.profile.id ?? '';
@@ -36,22 +43,39 @@ export const CoachDashboardView: React.FC = () => {
     if (!coachProfileId) return;
     const load = async () => {
       setIsLoading(true);
-      const [l, a, s] = await Promise.all([
+      const [l, a, s, b] = await Promise.all([
         fetchCoachListings(coachProfileId),
         fetchCoachApplications(coachProfileId),
         fetchCoachStudents(coachProfileId),
+        fetchCoachBookings(coachProfileId),
       ]);
       setListings(l);
       setApplications(a);
       setStudents(s);
+      setBookings(b);
       setIsLoading(false);
     };
     void load();
   }, [coachProfileId]);
 
+  useEffect(() => {
+    if (isLoading) return;
+    const pending = bookings.filter((b) => b.status === 'pending').length;
+    if (pending > 0 && pending !== prevPendingBookings) {
+      addNotification({
+        type: 'info',
+        title: 'Booking requests',
+        message: `You have ${pending} pending consultation request${pending === 1 ? '' : 's'}.`,
+      });
+    }
+    setPrevPendingBookings(pending);
+  }, [bookings, isLoading, prevPendingBookings, addNotification]);
+
   const activeListings = listings.filter((l) => l.status === 'active').length;
   const pendingApps = applications.filter((a) => a.status === 'pending').length;
+  const upcomingBookings = bookings.filter((b) => b.status !== 'cancelled').length;
   const recentApps = applications.slice(0, 3);
+  const recentBookings = bookings.slice(0, 3);
 
   return (
     <div className="liquid-shell min-h-screen pb-24 pt-10 sm:pt-14">
@@ -108,6 +132,13 @@ export const CoachDashboardView: React.FC = () => {
             label="Avg. Progress"
             value="—"
             sub="log data to track"
+          />
+          <StatCard
+            icon={<Calendar className="w-5 h-5 text-brand-accent" />}
+            label="Upcoming Bookings"
+            value={isLoading ? '—' : upcomingBookings}
+            sub={`${bookings.length} total`}
+            color="text-brand-accent"
           />
         </div>
 
@@ -172,7 +203,64 @@ export const CoachDashboardView: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Recent Applications */}
+          {/* Booking Requests */}
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="glass-panel p-6 rounded-3xl border border-brand-border space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-white">Booking Requests</h2>
+              <span className="text-xs text-brand-muted">{bookings.filter((b) => b.status === 'pending').length} pending</span>
+            </div>
+
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div key={i} className="h-16 rounded-2xl bg-brand-dark border border-brand-border animate-pulse" />
+                ))}
+              </div>
+            ) : bookings.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center space-y-3">
+                <div className="p-4 rounded-2xl bg-brand-elevated border border-brand-border">
+                  <Calendar className="w-8 h-8 text-brand-muted" />
+                </div>
+                <div className="text-sm font-medium text-white">No bookings yet</div>
+                <div className="text-xs text-brand-muted max-w-48">Your consultation requests will appear here once athletes book sessions.</div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {bookings.slice(0, 3).map((booking) => (
+                  <div key={booking.id} className="rounded-3xl border border-brand-border bg-brand-dark p-4">
+                    <div className="flex items-center justify-between gap-3 text-sm text-white">
+                      <div>
+                        <div className="font-semibold">{booking.athleteName}</div>
+                        <div className="text-[11px] text-brand-muted">{new Date(booking.startsAt).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                      </div>
+                      <span className="rounded-full px-2 py-1 text-[10px] font-bold bg-amber-400/10 text-amber-300 border border-amber-400/20">{booking.status.toUpperCase()}</span>
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setSelectedReminderBooking(booking)}
+                        className="rounded-2xl border border-brand-border bg-white/5 px-3 py-2 text-[11px] text-white hover:bg-white/10 transition"
+                      >
+                        Set reminder
+                      </button>
+                      <button
+                        onClick={() => setSelectedFeedbackBooking(booking)}
+                        className="rounded-2xl border border-brand-border bg-white/5 px-3 py-2 text-[11px] text-white hover:bg-white/10 transition"
+                      >
+                        Add feedback
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+
+        {/* Recent Applications */}
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
@@ -266,6 +354,32 @@ export const CoachDashboardView: React.FC = () => {
           </motion.div>
         )}
       </div>
+      <ReminderModal
+        isOpen={Boolean(selectedReminderBooking)}
+        onClose={() => setSelectedReminderBooking(null)}
+        booking={selectedReminderBooking}
+        onReminderSet={async (bookingId, reminder) => {
+          await saveConsultationReminder(bookingId, reminder);
+          addNotification({
+            type: 'success',
+            title: 'Reminder saved',
+            message: 'Your consultation reminder has been saved locally.',
+          });
+        }}
+      />
+      <PostConsultationFeedbackModal
+        isOpen={Boolean(selectedFeedbackBooking)}
+        onClose={() => setSelectedFeedbackBooking(null)}
+        booking={selectedFeedbackBooking}
+        onFeedbackSubmit={async (bookingId, comment, rating) => {
+          await saveConsultationFeedback(bookingId, rating, comment);
+          addNotification({
+            type: 'success',
+            title: 'Feedback saved',
+            message: 'Your post-consultation feedback was saved.',
+          });
+        }}
+      />
     </div>
   );
 };

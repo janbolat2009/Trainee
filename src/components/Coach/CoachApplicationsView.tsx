@@ -5,7 +5,9 @@ import {
   CheckCircle2, XCircle, Clock, Users, Sparkles, Bell, MessageSquare, RefreshCw,
 } from 'lucide-react';
 import { fetchCoachApplications, updateApplicationStatus } from '../../services/coachListingService';
-import type { ListingApplication, ApplicationStatus } from '../../types';
+import { fetchAthleteProfileById } from '../../services/profileService';
+import { AthleteProfileModal } from './AthleteProfileModal';
+import type { Athlete, ListingApplication, ApplicationStatus } from '../../types';
 
 const statusStyle = (status: ApplicationStatus) => {
   if (status === 'pending') return { bg: 'bg-amber-400/15 border-amber-400/30', text: 'text-amber-400', label: 'Pending' };
@@ -19,6 +21,9 @@ export const CoachApplicationsView: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | ApplicationStatus>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [selectedAthleteId, setSelectedAthleteId] = useState<string | null>(null);
+  const [selectedAthleteProfile, setSelectedAthleteProfile] = useState<Athlete | null>(null);
+  const [isAthleteModalOpen, setIsAthleteModalOpen] = useState(false);
 
   const coachProfileId = currentProfile?.profile.id ?? '';
 
@@ -31,6 +36,19 @@ export const CoachApplicationsView: React.FC = () => {
   };
 
   useEffect(() => { void load(); }, [coachProfileId]);
+
+  useEffect(() => {
+    if (!isAthleteModalOpen || !selectedAthleteId) return;
+
+    let cancelled = false;
+    const loadAthlete = async () => {
+      const athlete = await fetchAthleteProfileById(selectedAthleteId);
+      if (!cancelled) setSelectedAthleteProfile(athlete);
+    };
+
+    void loadAthlete();
+    return () => { cancelled = true; };
+  }, [isAthleteModalOpen, selectedAthleteId]);
 
   const handleUpdateStatus = async (appId: string, status: ApplicationStatus, athleteName: string) => {
     setProcessingId(appId);
@@ -164,6 +182,16 @@ export const CoachApplicationsView: React.FC = () => {
                           </div>
                         )}
 
+                        <button
+                          onClick={() => {
+                            setSelectedAthleteId(app.athleteId);
+                            setIsAthleteModalOpen(true);
+                          }}
+                          className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-brand-accent hover:text-white transition"
+                        >
+                          View athlete profile
+                        </button>
+
                         {/* Actions */}
                         {app.status === 'pending' && (
                           <div className="mt-3 flex items-center gap-2">
@@ -194,6 +222,11 @@ export const CoachApplicationsView: React.FC = () => {
           </div>
         )}
       </div>
+      <AthleteProfileModal
+        isOpen={isAthleteModalOpen}
+        onClose={() => setIsAthleteModalOpen(false)}
+        athlete={selectedAthleteProfile}
+      />
     </div>
   );
 };

@@ -148,7 +148,33 @@ export interface ImprovementMetric {
 export type TrainingFormat = 'online' | 'offline' | 'hybrid';
 export type ListingStatus = 'active' | 'paused' | 'archived';
 export type ApplicationStatus = 'pending' | 'accepted' | 'declined';
+export type ConsultationFormat = 'online' | 'offline';
+export type BookingStatus = 'pending' | 'confirmed' | 'cancelled';
 export type ProgressFlag = 'normal' | 'attention' | 'risk';
+
+export interface ConsultationSlot {
+  id: string;
+  coachId: string;
+  startsAt: string;
+  endsAt: string;
+  format: ConsultationFormat;
+  location: string;
+  isActive: boolean;
+}
+
+export interface ConsultationBooking {
+  id: string;
+  coachId: string;
+  athleteId: string;
+  athleteName: string;
+  startsAt: string;
+  endsAt: string;
+  format: ConsultationFormat;
+  location: string;
+  status: BookingStatus;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface CoachListing {
   id: string;

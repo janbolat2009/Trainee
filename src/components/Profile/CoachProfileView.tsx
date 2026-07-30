@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import type { Athlete } from '../../types';
 import { VerificationBadgeModal } from './VerificationBadgeModal';
 import { MOCK_COACH_QA, MOCK_REVIEWS } from '../../data/mockData';
 import { QASection } from './QASection';
+import { BookingModal } from './BookingModal';
 import { ShieldCheck, Star, MapPin, Award, CheckCircle2, ArrowLeft, Bookmark, Calendar, Phone, Mail, MessageSquare, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getOrCreateConversation, sendMessage } from '../../services/chatService';
 
 export const CoachProfileView: React.FC = () => {
   const {
@@ -15,56 +16,18 @@ export const CoachProfileView: React.FC = () => {
 
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [selectedTier, setSelectedTier] = useState<number>(1);
-  const [isBookingSending, setIsBookingSending] = useState(false);
-  const [isBookingSent, setIsBookingSent] = useState(false);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   const isSaved = savedCoachIds.includes(selectedCoach.id);
+  const athleteProfile = currentProfile?.role === 'athlete' ? (currentProfile.profile as Athlete) : null;
 
   const handleBooking = async () => {
-    // 1. If user is guest / not authenticated, prompt login
-    if (!isAuthenticated || !currentProfile) {
+    if (!isAuthenticated || !currentProfile || !athleteProfile) {
       setIsLoginOpen(true);
       return;
     }
 
-    setIsBookingSending(true);
-
-    try {
-      const athleteId = currentProfile.profile.id;
-      const coachId = selectedCoach.id;
-
-      // 2. Automatically create/get conversation in Supabase
-      const conv = await getOrCreateConversation(athleteId, coachId);
-      if (conv) {
-        const tier = selectedCoach.pricingTiers[selectedTier];
-        const tierName = tier?.name ?? 'Consultation';
-        const tierPrice = tier?.price ?? selectedCoach.hourlyRate;
-
-        // 3. Send initial booking message in Chat
-        await sendMessage(
-          conv.id,
-          athleteId,
-          `Hello Coach ${selectedCoach.name}! I would like to request booking for the "${tierName}" package ($${tierPrice}) in ${selectedCoach.sport}.`
-        );
-
-        setIsBookingSent(true);
-        addNotification({
-          type: 'success',
-          title: 'Booking chat opened!',
-          message: `Real-time chat conversation started with ${selectedCoach.name}.`,
-        });
-
-        // 4. Immediately open Realtime Chat Drawer
-        setTimeout(() => {
-          setIsChatOpen(true);
-          setIsBookingSent(false);
-        }, 1200);
-      }
-    } catch (err) {
-      console.error('Error handling booking chat:', err);
-    } finally {
-      setIsBookingSending(false);
-    }
+    setIsBookingModalOpen(true);
   };
 
   return (
@@ -160,31 +123,14 @@ export const CoachProfileView: React.FC = () => {
 
             <button
               onClick={() => void handleBooking()}
-              disabled={isBookingSending}
-              className="flex items-center space-x-2 rounded-xl bg-white px-5 py-3 text-xs font-semibold text-black transition hover:bg-zinc-200 shadow-glow-white disabled:opacity-60"
+              className="flex items-center space-x-2 rounded-xl bg-white px-5 py-3 text-xs font-semibold text-black transition hover:bg-zinc-200 shadow-glow-white"
             >
-              {isBookingSending ? (
-                <Loader2 className="w-4 h-4 animate-spin text-black" />
-              ) : (
-                <Calendar className="w-4 h-4" />
-              )}
-              <span>{isBookingSending ? 'Creating Chat...' : 'Book Consultation'}</span>
+              <Calendar className="w-4 h-4" />
+              <span>Book Consultation</span>
             </button>
           </div>
         </motion.div>
 
-        {isBookingSent && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4 p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-mono flex items-center justify-between"
-          >
-            <div className="flex items-center space-x-2">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Consultation request sent! Opening direct chat conversation with {selectedCoach.name}...</span>
-            </div>
-          </motion.div>
-        )}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-8">
           <motion.div
@@ -395,11 +341,10 @@ export const CoachProfileView: React.FC = () => {
 
               <button
                 onClick={() => void handleBooking()}
-                disabled={isBookingSending}
-                className="w-full py-3.5 rounded-xl bg-white text-black font-extrabold text-xs uppercase tracking-wider hover:bg-zinc-200 transition shadow-glow-white flex items-center justify-center space-x-2 disabled:opacity-60"
+                className="w-full py-3.5 rounded-xl bg-white text-black font-extrabold text-xs uppercase tracking-wider hover:bg-zinc-200 transition shadow-glow-white flex items-center justify-center space-x-2"
               >
                 <MessageSquare className="w-4 h-4 text-black" />
-                <span>{isBookingSending ? 'Starting Chat...' : 'Select Tier & Request Booking'}</span>
+                <span>Select Tier & Request Booking</span>
               </button>
 
               <div className="pt-4 border-t border-brand-border/60 space-y-2 text-xs font-mono text-brand-muted">
@@ -421,6 +366,13 @@ export const CoachProfileView: React.FC = () => {
         coach={selectedCoach}
         isOpen={isVerificationOpen}
         onClose={() => setIsVerificationOpen(false)}
+      />
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        coach={selectedCoach}
+        athleteProfile={athleteProfile}
+        onBookingCreated={() => setIsBookingModalOpen(false)}
       />
     </div>
   );

@@ -100,6 +100,23 @@ const normalizeAuthenticatedCoach = (row: ProfileRow): Coach => {
   };
 };
 
+export const fetchAthleteProfileById = async (athleteId: string): Promise<Athlete | null> => {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', athleteId)
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error('fetchAthleteProfileById:', error?.message);
+    return null;
+  }
+
+  return normalizeAuthenticatedAthlete(data as ProfileRow);
+};
+
 export const fetchAuthenticatedProfile = async (authUserId: string): Promise<AuthenticatedProfile | null> => {
   if (!supabase) throw new Error('Supabase is not configured.');
 
