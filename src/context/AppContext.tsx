@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 
-import type { Athlete, Coach, FilterState, UserRole } from '../types';
+import type { Athlete, Coach, ConsultationBooking, FilterState, ReminderItem, UserRole } from '../types';
 import { MOCK_ATHLETES, MOCK_COACHES } from '../data/mockData';
 import { supabase } from '../lib/supabase';
 import {
@@ -69,14 +69,43 @@ interface AppContextType {
   addNotification: (n: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => void;
   clearNotifications: () => void;
   unreadCount: number;
+  isNotificationsOpen: boolean;
+  setIsNotificationsOpen: (open: boolean) => void;
+  reminders: ReminderItem[];
+  addReminder: (item: ReminderItem) => void;
+  markReminderAsRead: (id: string) => void;
+  dismissReminder: (id: string) => void;
+  markReminderAsCompleted: (id: string) => void;
   // Coach onboarding: trigger listing creation after registration
   isCreateListingOpen: boolean;
   setIsCreateListingOpen: (open: boolean) => void;
+  activeMeetingBooking: ConsultationBooking | null;
+  setActiveMeetingBooking: (booking: ConsultationBooking | null) => void;
 }
 
 const DEFAULT_FILTERS: FilterState = {
-  searchQuery: '', sport: 'All', location: '', maxPrice: 200, minRating: 0,
-  skillLevel: 'All', coachingStyle: 'All', verifiedOnly: false, availability: 'All',
+  searchQuery: '', sport: 'All', location: '', priceRange: { min: 50, max: 250 }, minRating: 0,
+  skillLevel: 'All', coachingStyle: 'All', verifiedOnly: false, availability: 'All', experience: 'Any',
+  languages: [], availabilityWindow: 'Any', trainingFormat: 'Any', coachType: 'Any', sortBy: 'highest-rated',
+};
+
+const FILTERS_STORAGE_KEY = 'apexlink-discovery-filters';
+
+const readStoredFilters = (): FilterState => {
+  if (typeof window === 'undefined') return DEFAULT_FILTERS;
+  try {
+    const raw = window.localStorage.getItem(FILTERS_STORAGE_KEY);
+    if (!raw) return DEFAULT_FILTERS;
+    const parsed = JSON.parse(raw) as Partial<FilterState>;
+    return {
+      ...DEFAULT_FILTERS,
+      ...parsed,
+      priceRange: parsed.priceRange ?? DEFAULT_FILTERS.priceRange,
+      languages: parsed.languages ?? [],
+    };
+  } catch {
+    return DEFAULT_FILTERS;
+  }
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -92,7 +121,7 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [totalUnreadChatCount, setTotalUnreadChatCount] = useState(0);
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<FilterState>(readStoredFilters);
   const [savedCoachIds, setSavedCoachIds] = useState<string[]>(['coach-1', 'coach-2']);
   const [coachesList, setCoachesList] = useState<Coach[]>(MOCK_COACHES);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -100,8 +129,11 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isCreateListingOpen, setIsCreateListingOpen] = useState(false);
+  const [activeMeetingBooking, setActiveMeetingBooking] = useState<ConsultationBooking | null>(null);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [reminders, setReminders] = useState<ReminderItem[]>([]);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length + reminders.filter((item) => item.isUnread).length;
 
   const addNotification = (n: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => {
     setNotifications((prev) => [
@@ -116,6 +148,18 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   };
 
   const clearNotifications = () => setNotifications([]);
+  const addReminder = (item: ReminderItem) => {
+    setReminders((prev) => [item, ...prev.filter((entry) => entry.bookingId !== item.bookingId || entry.id !== item.id)]);
+  };
+  const markReminderAsRead = (id: string) => {
+    setReminders((prev) => prev.map((item) => item.id === id ? { ...item, isUnread: false } : item));
+  };
+  const dismissReminder = (id: string) => {
+    setReminders((prev) => prev.map((item) => item.id === id ? { ...item, status: 'dismissed' } : item));
+  };
+  const markReminderAsCompleted = (id: string) => {
+    setReminders((prev) => prev.map((item) => item.id === id ? { ...item, status: 'completed', isUnread: false } : item));
+  };
 
   const applyAuthenticatedProfile = (profile: AuthenticatedProfile) => {
     setCurrentProfile(profile);
@@ -219,6 +263,12 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+    }
+  }, [filters]);
+
   const resetFilters = () => setFilters(DEFAULT_FILTERS);
   const toggleSaveCoach = (coachId: string) => {
     setSavedCoachIds((ids) => ids.includes(coachId) ? ids.filter((id) => id !== coachId) : [...ids, coachId]);
@@ -260,7 +310,8 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
       filters, setFilters, resetFilters, savedCoachIds, toggleSaveCoach, viewCoachDetails,
       coachesList, setCoachesList, isAuthenticated, setIsAuthenticated, isLoginOpen, setIsLoginOpen,
       currentUser, login, logout, notifications, addNotification, clearNotifications, unreadCount,
-      isCreateListingOpen, setIsCreateListingOpen,
+      isCreateListingOpen, setIsCreateListingOpen, activeMeetingBooking, setActiveMeetingBooking,
+      isNotificationsOpen, setIsNotificationsOpen, reminders, addReminder, markReminderAsRead, dismissReminder, markReminderAsCompleted,
     }}>
       {children}
     </AppContext.Provider>

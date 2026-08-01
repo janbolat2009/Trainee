@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { X, Calendar, Clock3, MapPin, Laptop, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { X, Calendar, Clock3, MapPin, Laptop, CheckCircle2, AlertTriangle, Video } from 'lucide-react';
 import type { Athlete, Coach, ConsultationSlot, ConsultationBooking, ConsultationFormat } from '../../types';
 import { fetchCoachAvailabilitySlots, bookConsultation } from '../../services/bookingService';
 import { useApp } from '../../context/AppContext';
@@ -14,7 +14,7 @@ interface BookingModalProps {
 
 const formatDate = (iso: string) => {
   const date = new Date(iso);
-  return date.toLocaleString('ru-RU', {
+  return date.toLocaleString('en-GB', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
@@ -30,7 +30,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   athleteProfile,
   onBookingCreated,
 }) => {
-  const { setIsLoginOpen, addNotification, isAuthenticated } = useApp();
+  const { setIsLoginOpen, addNotification, isAuthenticated, setActiveMeetingBooking, addReminder } = useApp();
   const [slots, setSlots] = useState<ConsultationSlot[]>([]);
   const [selectedFormat, setSelectedFormat] = useState<ConsultationFormat>('online');
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
@@ -96,7 +96,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       });
 
       setSuccess(booking);
+      setActiveMeetingBooking(booking);
       onBookingCreated?.(booking);
+      const reminderBase = {
+        bookingId: booking.id,
+        title: `Consultation with ${coach.name}`,
+        message: `Your session starts at ${formatDate(booking.startsAt)}.`,
+        scheduledFor: booking.startsAt,
+        status: 'scheduled' as const,
+        isUnread: true,
+      };
+      addReminder({ ...reminderBase, id: `reminder-${booking.id}-hour`, joinUrl: booking.format === 'online' ? '/meeting' : undefined });
+      addReminder({ ...reminderBase, id: `reminder-${booking.id}-five`, scheduledFor: new Date(new Date(booking.startsAt).getTime() - 5 * 60 * 1000).toISOString(), title: `Starting soon: ${coach.name}`, message: 'Join your meeting in 5 minutes.', status: 'scheduled', isUnread: true, joinUrl: booking.format === 'online' ? '/meeting' : undefined });
       addNotification({
         type: 'success',
         title: 'Consultation Requested',
@@ -210,7 +221,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       <div className="flex items-center justify-between gap-4">
                         <div>
                           <p className="text-sm font-semibold text-white">{formatDate(slot.startsAt)}</p>
-                          <p className="text-[11px] text-zinc-400 mt-1">Ends {new Date(slot.endsAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
+                          <p className="text-[11px] text-zinc-400 mt-1">Ends {new Date(slot.endsAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
                         <div className="text-[11px] uppercase tracking-[0.24em] text-brand-muted">{slot.format}</div>
                       </div>
@@ -276,6 +287,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 {isAuthenticated ? (isBooking ? 'Requesting Booking...' : 'Request Consultation') : 'Sign In to Book'}
               </button>
             )}
+
+            <div className="rounded-3xl border border-brand-accent/20 bg-brand-accent/10 p-4 text-[11px] text-zinc-300">
+              <div className="flex items-center gap-2 text-brand-accent">
+                <Video className="w-4 h-4" />
+                <span className="font-semibold">Built-in video calling</span>
+              </div>
+              <p className="mt-2 leading-relaxed">Once the booking is confirmed, both participants will be able to join a secure meeting room directly from their dashboard.</p>
+            </div>
           </div>
         </div>
       </div>

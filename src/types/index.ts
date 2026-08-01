@@ -36,6 +36,14 @@ export interface Coach {
   coverImage?: string;
   sport: string;
   secondarySports: string[];
+  country?: string;
+  city?: string;
+  languagesSpoken?: string[];
+  gender?: string;
+  timeZone?: string;
+  preferredCoachingStyle?: string;
+  languages?: string[];
+  specialization?: string;
   location: string;
   isVerified: boolean;
   verificationBadge: string;
@@ -52,6 +60,11 @@ export interface Coach {
   contactNumber: string;
   email: string;
   availability: 'Immediate' | 'Limited Spots' | 'Waitlist';
+  coachType?: string;
+  trainingFormat?: string;
+  availabilityWindow?: string;
+  popularity?: number;
+  joinedAt?: string;
   matchScore?: number;
   matchReasons?: string[];
 }
@@ -65,6 +78,8 @@ export interface Athlete {
   specialization: string;
   skillLevel: 'Beginner' | 'Intermediate' | 'Advanced' | 'Semi-Pro' | 'Elite';
   location: string;
+  country?: string;
+  city?: string;
   budgetRange: string;
   contactNumber: string;
   email: string;
@@ -72,18 +87,28 @@ export interface Athlete {
   goals: string[];
   achievements: string[];
   skillProficiency: { name: string; score: number }[];
+  languagesSpoken?: string[];
+  gender?: string;
+  timeZone?: string;
+  secondarySports?: string[];
 }
 
 export interface FilterState {
   searchQuery: string;
   sport: string;
   location: string;
-  maxPrice: number;
+  priceRange: { min: number; max: number };
   minRating: number;
   skillLevel: string;
   coachingStyle: string;
   verifiedOnly: boolean;
   availability: string;
+  experience: string;
+  languages: string[];
+  availabilityWindow: string;
+  trainingFormat: string;
+  coachType: string;
+  sortBy: string;
 }
 
 export interface QuizQuestion {
@@ -120,6 +145,17 @@ export interface QAItem {
   authorRole?: string;
   date?: string;
   upvotes: number;
+}
+
+export interface ReminderItem {
+  id: string;
+  bookingId: string;
+  title: string;
+  message: string;
+  scheduledFor: string;
+  status: 'scheduled' | 'triggered' | 'dismissed' | 'completed';
+  isUnread: boolean;
+  joinUrl?: string;
 }
 
 export interface DashboardSession {
@@ -167,6 +203,7 @@ export interface ConsultationBooking {
   coachId: string;
   athleteId: string;
   athleteName: string;
+  coachName?: string;
   startsAt: string;
   endsAt: string;
   format: ConsultationFormat;
@@ -174,6 +211,7 @@ export interface ConsultationBooking {
   status: BookingStatus;
   createdAt: string;
   updatedAt: string;
+  meetingId?: string;
 }
 
 export interface CoachListing {

@@ -11,6 +11,7 @@ import { fetchCoachBookings, saveConsultationReminder, saveConsultationFeedback 
 import { ReminderModal } from '../Notifications/ReminderModal';
 import { PostConsultationFeedbackModal } from '../Feedback/PostConsultationFeedbackModal';
 import type { CoachListing, ListingApplication, CoachStudent, ConsultationBooking } from '../../types';
+import { VideoMeetingModal } from '../Meetings/VideoMeetingModal';
 
 const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string | number; sub?: string; color?: string }> = ({
   icon, label, value, sub, color = 'text-white',
@@ -26,7 +27,7 @@ const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string |
 );
 
 export const CoachDashboardView: React.FC = () => {
-  const { currentProfile, setActiveTab, setIsCreateListingOpen, addNotification } = useApp();
+  const { currentProfile, setActiveTab, setIsCreateListingOpen, addNotification, activeMeetingBooking, setActiveMeetingBooking } = useApp();
   const [listings, setListings] = useState<CoachListing[]>([]);
   const [applications, setApplications] = useState<ListingApplication[]>([]);
   const [students, setStudents] = useState<CoachStudent[]>([]);
@@ -236,7 +237,7 @@ export const CoachDashboardView: React.FC = () => {
                     <div className="flex items-center justify-between gap-3 text-sm text-white">
                       <div>
                         <div className="font-semibold">{booking.athleteName}</div>
-                        <div className="text-[11px] text-brand-muted">{new Date(booking.startsAt).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                        <div className="text-[11px] text-brand-muted">{new Date(booking.startsAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
                       </div>
                       <span className="rounded-full px-2 py-1 text-[10px] font-bold bg-amber-400/10 text-amber-300 border border-amber-400/20">{booking.status.toUpperCase()}</span>
                     </div>
@@ -252,6 +253,12 @@ export const CoachDashboardView: React.FC = () => {
                         className="rounded-2xl border border-brand-border bg-white/5 px-3 py-2 text-[11px] text-white hover:bg-white/10 transition"
                       >
                         Add feedback
+                      </button>
+                      <button
+                        onClick={() => setActiveMeetingBooking(booking)}
+                        className="rounded-2xl border border-brand-accent/30 bg-brand-accent/10 px-3 py-2 text-[11px] font-semibold text-brand-accent hover:bg-brand-accent/20 transition"
+                      >
+                        Join meeting
                       </button>
                     </div>
                   </div>
@@ -380,6 +387,7 @@ export const CoachDashboardView: React.FC = () => {
           });
         }}
       />
+      <VideoMeetingModal booking={activeMeetingBooking} onClose={() => setActiveMeetingBooking(null)} />
     </div>
   );
 };

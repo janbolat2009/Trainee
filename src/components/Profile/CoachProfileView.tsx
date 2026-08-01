@@ -5,6 +5,7 @@ import { VerificationBadgeModal } from './VerificationBadgeModal';
 import { MOCK_COACH_QA, MOCK_REVIEWS } from '../../data/mockData';
 import { QASection } from './QASection';
 import { BookingModal } from './BookingModal';
+import { EditProfileModal } from './EditProfileModal';
 import { ShieldCheck, Star, MapPin, Award, CheckCircle2, ArrowLeft, Bookmark, Calendar, Phone, Mail, MessageSquare, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -17,6 +18,7 @@ export const CoachProfileView: React.FC = () => {
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
   const [selectedTier, setSelectedTier] = useState<number>(1);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   const isSaved = savedCoachIds.includes(selectedCoach.id);
   const athleteProfile = currentProfile?.role === 'athlete' ? (currentProfile.profile as Athlete) : null;
@@ -339,6 +341,7 @@ export const CoachProfileView: React.FC = () => {
                 })}
               </div>
 
+{currentProfile?.role === 'athlete' && (
               <button
                 onClick={() => void handleBooking()}
                 className="w-full py-3.5 rounded-xl bg-white text-black font-extrabold text-xs uppercase tracking-wider hover:bg-zinc-200 transition shadow-glow-white flex items-center justify-center space-x-2"
@@ -346,6 +349,15 @@ export const CoachProfileView: React.FC = () => {
                 <MessageSquare className="w-4 h-4 text-black" />
                 <span>Select Tier & Request Booking</span>
               </button>
+            )}
+            {currentProfile && (
+              <button
+                onClick={() => setIsEditProfileOpen(true)}
+                className="mt-3 w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-xs font-semibold text-white transition hover:bg-white/[0.1]"
+              >
+                Edit Profile
+              </button>
+            )}
 
               <div className="pt-4 border-t border-brand-border/60 space-y-2 text-xs font-mono text-brand-muted">
                 <div className="flex items-center space-x-2">
@@ -374,6 +386,7 @@ export const CoachProfileView: React.FC = () => {
         athleteProfile={athleteProfile}
         onBookingCreated={() => setIsBookingModalOpen(false)}
       />
+      <EditProfileModal isOpen={isEditProfileOpen} onClose={() => setIsEditProfileOpen(false)} />
     </div>
   );
 };

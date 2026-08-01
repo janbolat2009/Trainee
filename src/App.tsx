@@ -24,6 +24,8 @@ import { CoachListingsView } from './components/Coach/CoachListingsView';
 import { CoachApplicationsView } from './components/Coach/CoachApplicationsView';
 import { CoachStudentsView } from './components/Coach/CoachStudentsView';
 import { CreateListingModal } from './components/Coach/CreateListingModal';
+import { VideoMeetingModal } from './components/Meetings/VideoMeetingModal';
+import { NotificationCenter } from './components/Notifications/NotificationCenter';
 
 const MainContent: React.FC = () => {
   const { activeTab } = useApp();
@@ -99,6 +101,14 @@ const GlobalCoachModals: React.FC = () => {
   );
 };
 
+const GlobalMeetingModal: React.FC = () => {
+  const { activeMeetingBooking, setActiveMeetingBooking } = useApp();
+
+  return (
+    <VideoMeetingModal booking={activeMeetingBooking} onClose={() => setActiveMeetingBooking(null)} />
+  );
+};
+
 export function App() {
   return (
     <AppProvider>
@@ -114,6 +124,8 @@ export function App() {
         <AICopilotDrawer />
         <ChatDrawer />
         <GlobalCoachModals />
+        <GlobalMeetingModal />
+        <NotificationCenter />
       </div>
     </AppProvider>
   );

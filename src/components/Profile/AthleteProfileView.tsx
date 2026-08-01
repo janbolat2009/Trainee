@@ -1,14 +1,25 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { QASection } from './QASection';
 import { MOCK_ATHLETE_QA } from '../../data/mockData';
 import { Trophy, Target, Activity, MapPin, Sparkles, Edit3, User, LogIn, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { WellbeingModal } from '../Support/WellbeingModal';
+import { fetchAthleteBookings } from '../../services/bookingService';
+import type { ConsultationBooking } from '../../types';
+import { VideoMeetingModal } from '../Meetings/VideoMeetingModal';
+import { EditProfileModal } from './EditProfileModal';
 
 export const AthleteProfileView: React.FC = () => {
-  const { selectedAthlete, setActiveTab, setIsOnboardingOpen, setIsLoginOpen, isAuthenticated, currentProfile, addNotification } = useApp();
+  const { selectedAthlete, setActiveTab, setIsOnboardingOpen, setIsLoginOpen, isAuthenticated, currentProfile, addNotification, activeMeetingBooking, setActiveMeetingBooking } = useApp();
   const [isWellbeingOpen, setIsWellbeingOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [bookings, setBookings] = useState<ConsultationBooking[]>([]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !currentProfile?.profile.id) return;
+    void fetchAthleteBookings(currentProfile.profile.id).then(setBookings);
+  }, [isAuthenticated, currentProfile?.profile.id]);
 
   // If user is guest (unauthenticated), show clear login/register CTA banner instead of dummy mock data
   if (!isAuthenticated) {
@@ -103,7 +114,7 @@ export const AthleteProfileView: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-3">
             <button
-              onClick={() => setIsOnboardingOpen(true)}
+              onClick={() => setIsEditProfileOpen(true)}
               className="flex items-center space-x-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-xs font-medium text-white transition hover:bg-white/[0.1]"
             >
               <Edit3 className="w-4 h-4" />
@@ -207,6 +218,38 @@ export const AthleteProfileView: React.FC = () => {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: 0.2 }}
+              className="glass-panel p-6 sm:p-8 rounded-3xl border border-brand-border"
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Upcoming sessions</h2>
+                  <p className="text-xs text-brand-muted">Join your confirmed consultations right from the dashboard.</p>
+                </div>
+              </div>
+              {bookings.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-brand-border p-5 text-sm text-brand-muted">No upcoming consultations yet. Book a session to see it appear here.</div>
+              ) : (
+                <div className="space-y-3">
+                  {bookings.slice(0, 3).map((booking) => (
+                    <div key={booking.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-border bg-brand-dark/70 p-4">
+                      <div>
+                        <p className="text-sm font-semibold text-white">{booking.location || 'Video consultation'}</p>
+                        <p className="text-[11px] text-brand-muted">{new Date(booking.startsAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full border border-brand-accent/30 bg-brand-accent/10 px-2.5 py-1 text-[10px] font-semibold text-brand-accent">{booking.status}</span>
+                        <button onClick={() => setActiveMeetingBooking(booking)} className="rounded-xl border border-brand-accent/25 bg-brand-accent/10 px-3 py-2 text-[11px] font-semibold text-brand-accent">Join meeting</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.2 }}
             >
               <QASection
                 initialItems={MOCK_ATHLETE_QA}
@@ -252,6 +295,8 @@ export const AthleteProfileView: React.FC = () => {
           });
         }}
       />
+      <EditProfileModal isOpen={isEditProfileOpen} onClose={() => setIsEditProfileOpen(false)} />
+      <VideoMeetingModal booking={activeMeetingBooking} onClose={() => setActiveMeetingBooking(null)} />
     </div>
   );
 };

@@ -9,7 +9,7 @@ export const Navbar: React.FC = () => {
     activeTab, setActiveTab, setIsOnboardingOpen, setIsLoginOpen,
     isCopilotOpen, setIsCopilotOpen, isChatOpen, setIsChatOpen,
     isAuthenticated, currentUser, currentProfile, logout, unreadCount,
-    totalUnreadChatCount, setIsCreateListingOpen,
+    totalUnreadChatCount, setIsCreateListingOpen, setIsNotificationsOpen,
   } = useApp();
 
   const isCoach = currentProfile?.role === 'coach';
@@ -90,10 +90,10 @@ export const Navbar: React.FC = () => {
             </button>
           )}
 
-          {/* Notifications bell (coach only) */}
-          {isCoach && isAuthenticated && (
+          {/* Notifications bell */}
+          {isAuthenticated && (
             <button
-              onClick={() => setActiveTab('coach-applications')}
+              onClick={() => setIsNotificationsOpen(true)}
               className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-zinc-300 transition hover:bg-white/10 hover:text-white"
               aria-label="Notifications"
             >
