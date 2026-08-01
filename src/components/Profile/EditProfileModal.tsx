@@ -66,10 +66,16 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
       const localUrl = URL.createObjectURL(file);
       setPreviewUrl(localUrl);
       if (!supabase || !currentProfile?.profile.id) throw new Error('Supabase is not configured.');
+      const bucketName = 'avatars';
       const path = `avatars/${currentProfile.profile.id}-${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type });
-      if (uploadError) throw new Error(uploadError.message);
-      const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+      const { error: uploadError } = await supabase.storage.from(bucketName).upload(path, file, { upsert: true, contentType: file.type });
+      if (uploadError) {
+        if (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('not found')) {
+          throw new Error('Photo storage bucket is not configured in Supabase. Please create a public bucket named "avatars" and try again.');
+        }
+        throw new Error(uploadError.message);
+      }
+      const { data } = supabase.storage.from(bucketName).getPublicUrl(path);
       setForm((prev: any) => ({ ...prev, avatar: data.publicUrl }));
       setPreviewUrl(data.publicUrl);
       addNotification({ type: 'success', title: 'Photo updated', message: 'Your profile photo has been uploaded.' });
@@ -159,7 +165,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
   return (
     <AnimatePresence>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto overscroll-contain bg-black/80 p-3 py-4 sm:p-6 sm:py-6">
-        <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 24, opacity: 0 }} className="w-full max-w-2xl max-h-[92vh] overflow-hidden rounded-[28px] border border-brand-border bg-brand-card shadow-2xl">
+        <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 24, opacity: 0 }} className="w-full max-w-2xl max-h-[92vh] overflow-hidden rounded-[28px] border border-brand-border bg-brand-card shadow-2xl flex flex-col">
           <div className="flex items-center justify-between border-b border-brand-border/60 p-4 sm:p-5">
             <div>
               <p className="text-[11px] uppercase tracking-[0.28em] text-brand-muted">Edit profile</p>
@@ -170,7 +176,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
             </button>
           </div>
 
-          <div className="mt-0 max-h-[calc(92vh-120px)] overflow-y-auto px-4 pb-4 sm:px-5 sm:pb-5">
+          <div className="mt-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-5 sm:pb-5">
             <div className="space-y-5 py-4">
             <div className="flex flex-col gap-4 rounded-3xl border border-brand-border bg-brand-dark/70 p-4 sm:flex-row sm:items-center">
               <div className="h-20 w-20 overflow-hidden rounded-2xl border border-brand-border bg-brand-elevated">
@@ -269,7 +275,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
           </div>
         </div>
 
-          <div className="flex flex-col-reverse gap-3 border-t border-brand-border/60 px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
+          <div className="flex flex-col-reverse gap-3 border-t border-brand-border/60 px-4 py-4 sm:flex-row sm:justify-end sm:px-5 sm:pt-5">
             <button onClick={onClose} className="rounded-2xl border border-brand-border bg-white/5 px-4 py-2.5 text-sm font-semibold text-white">Cancel</button>
             <button onClick={handleSave} disabled={isSaving || isUploading} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-black">
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

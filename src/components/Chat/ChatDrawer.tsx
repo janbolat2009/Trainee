@@ -143,7 +143,7 @@ export const ChatDrawer: React.FC = () => {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-4xl h-[620px] max-h-[85vh] bg-brand-card border border-brand-border rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row"
+        className="w-full max-w-4xl h-[92vh] max-h-[92vh] bg-brand-card border border-brand-border rounded-3xl shadow-2xl overflow-hidden flex flex-col md:h-[620px] md:max-h-[85vh] md:flex-row"
       >
         {/* Conversations Sidebar */}
         <div
@@ -168,7 +168,7 @@ export const ChatDrawer: React.FC = () => {
           </div>
 
           {/* Conversation List */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          <div className="flex-1 overflow-y-auto p-2 space-y-1 pb-3">
             {isLoadingConvs ? (
               <div className="p-4 text-center text-xs text-brand-muted space-y-2">
                 <Loader2 className="w-5 h-5 animate-spin mx-auto text-brand-accent" />
@@ -287,7 +287,7 @@ export const ChatDrawer: React.FC = () => {
               </div>
 
               {/* Message History */}
-              <div className="flex-1 p-4 overflow-y-auto space-y-3">
+              <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 pb-4">
                 {isLoadingMsgs ? (
                   <div className="h-full flex items-center justify-center text-xs text-brand-muted space-x-2">
                     <Loader2 className="w-4 h-4 animate-spin text-brand-accent" />
@@ -343,19 +343,19 @@ export const ChatDrawer: React.FC = () => {
               {/* Input Form */}
               <form
                 onSubmit={handleSend}
-                className="p-3 bg-brand-dark/90 border-t border-brand-border/60 flex items-center space-x-2"
+                className="p-3 bg-brand-dark/90 border-t border-brand-border/60 flex items-center gap-2 sticky bottom-0"
               >
                 <input
                   type="text"
                   placeholder="Type a message..."
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  className="flex-1 bg-brand-card border border-brand-border rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-brand-accent"
+                  className="flex-1 min-w-0 bg-brand-card border border-brand-border rounded-xl px-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-brand-accent"
                 />
                 <button
                   type="submit"
                   disabled={!inputText.trim() || isSending}
-                  className="p-2.5 rounded-xl bg-white text-black font-bold hover:bg-zinc-200 transition disabled:opacity-40"
+                  className="shrink-0 p-2.5 rounded-xl bg-white text-black font-bold hover:bg-zinc-200 transition disabled:opacity-40"
                 >
                   <Send className="w-4 h-4" />
                 </button>
