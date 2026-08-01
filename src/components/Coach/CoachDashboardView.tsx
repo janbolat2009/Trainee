@@ -12,6 +12,7 @@ import { ReminderModal } from '../Notifications/ReminderModal';
 import { PostConsultationFeedbackModal } from '../Feedback/PostConsultationFeedbackModal';
 import type { CoachListing, ListingApplication, CoachStudent, ConsultationBooking } from '../../types';
 import { VideoMeetingModal } from '../Meetings/VideoMeetingModal';
+import { AthleteInsightsPanel } from './AthleteInsightsPanel';
 
 const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string | number; sub?: string; color?: string }> = ({
   icon, label, value, sub, color = 'text-white',
@@ -27,7 +28,7 @@ const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string |
 );
 
 export const CoachDashboardView: React.FC = () => {
-  const { currentProfile, setActiveTab, setIsCreateListingOpen, addNotification, activeMeetingBooking, setActiveMeetingBooking } = useApp();
+  const { currentProfile, setActiveTab, setIsCreateListingOpen, addNotification, activeMeetingBooking, setActiveMeetingBooking, addReminder } = useApp();
   const [listings, setListings] = useState<CoachListing[]>([]);
   const [applications, setApplications] = useState<ListingApplication[]>([]);
   const [students, setStudents] = useState<CoachStudent[]>([]);
@@ -334,6 +335,8 @@ export const CoachDashboardView: React.FC = () => {
           </motion.div>
         </div>
 
+        <AthleteInsightsPanel />
+
         {/* No listings CTA */}
         {!isLoading && listings.length === 0 && (
           <motion.div
@@ -367,6 +370,20 @@ export const CoachDashboardView: React.FC = () => {
         booking={selectedReminderBooking}
         onReminderSet={async (bookingId, reminder) => {
           await saveConsultationReminder(bookingId, reminder);
+          const booking = bookings.find((item) => item.id === bookingId);
+          if (booking) {
+            const reminderDate = new Date(booking.startsAt);
+            addReminder({
+              id: `coach-reminder-${booking.id}`,
+              bookingId: booking.id,
+              title: `Reminder: ${booking.athleteName}`,
+              message: `${reminder} for your consultation with ${booking.athleteName}.`,
+              scheduledFor: reminderDate.toISOString(),
+              status: 'scheduled',
+              isUnread: true,
+              audience: 'coach',
+            });
+          }
           addNotification({
             type: 'success',
             title: 'Reminder saved',

@@ -156,6 +156,18 @@ export interface ReminderItem {
   status: 'scheduled' | 'triggered' | 'dismissed' | 'completed';
   isUnread: boolean;
   joinUrl?: string;
+  audience?: 'athlete' | 'coach' | 'all';
+}
+
+export interface AthleteInsight {
+  id: string;
+  athleteId: string;
+  athleteName: string;
+  mood: string;
+  summary: string;
+  note: string;
+  timestamp: string;
+  source: 'wellbeing' | 'progress';
 }
 
 export interface DashboardSession {

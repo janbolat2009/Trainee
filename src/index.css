@@ -14,6 +14,14 @@
       radial-gradient(circle at 12% -8%, rgba(84, 214, 208, 0.10), transparent 28rem),
       radial-gradient(circle at 90% 12%, rgba(129, 111, 255, 0.09), transparent 25rem);
     font-feature-settings: 'ss01' on, 'cv11' on;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
 
   button, a { -webkit-tap-highlight-color: transparent; }
@@ -92,6 +100,18 @@
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; }
+}
+
+@media (max-width: 640px) {
+  body {
+    overscroll-behavior-y: none;
+  }
+
+  .glass-panel,
+  .glass-panel-elevated {
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
 }
 
 /* Custom clip utility for sports badge */

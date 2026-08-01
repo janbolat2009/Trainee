@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 
-import type { Athlete, Coach, ConsultationBooking, FilterState, ReminderItem, UserRole } from '../types';
+import type { Athlete, AthleteInsight, Coach, ConsultationBooking, FilterState, ReminderItem, UserRole } from '../types';
 import { MOCK_ATHLETES, MOCK_COACHES } from '../data/mockData';
 import { supabase } from '../lib/supabase';
 import {
@@ -9,6 +9,7 @@ import {
   fetchProfileData,
   type AuthenticatedProfile,
 } from '../services/profileService';
+import { loadStoredReminders, saveStoredReminders } from '../services/reminderService';
 
 export type ActiveTab =
   | 'home'
@@ -76,6 +77,8 @@ interface AppContextType {
   markReminderAsRead: (id: string) => void;
   dismissReminder: (id: string) => void;
   markReminderAsCompleted: (id: string) => void;
+  athleteInsights: AthleteInsight[];
+  addAthleteInsight: (item: Omit<AthleteInsight, 'id' | 'timestamp'>) => void;
   // Coach onboarding: trigger listing creation after registration
   isCreateListingOpen: boolean;
   setIsCreateListingOpen: (open: boolean) => void;
@@ -131,7 +134,8 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   const [isCreateListingOpen, setIsCreateListingOpen] = useState(false);
   const [activeMeetingBooking, setActiveMeetingBooking] = useState<ConsultationBooking | null>(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [reminders, setReminders] = useState<ReminderItem[]>([]);
+  const [reminders, setReminders] = useState<ReminderItem[]>(() => loadStoredReminders());
+  const [athleteInsights, setAthleteInsights] = useState<AthleteInsight[]>([]);
 
   const unreadCount = notifications.filter((n) => !n.read).length + reminders.filter((item) => item.isUnread).length;
 
@@ -159,6 +163,26 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   };
   const markReminderAsCompleted = (id: string) => {
     setReminders((prev) => prev.map((item) => item.id === id ? { ...item, status: 'completed', isUnread: false } : item));
+  };
+
+  const addAthleteInsight = (item: Omit<AthleteInsight, 'id' | 'timestamp'>) => {
+    const insight: AthleteInsight = {
+      ...item,
+      id: `insight-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: new Date().toISOString(),
+    };
+
+    setAthleteInsights((prev) => [insight, ...prev].slice(0, 12));
+
+    if (typeof window !== 'undefined') {
+      const syncKey = 'trainee-athlete-insights';
+      window.localStorage.setItem(syncKey, JSON.stringify(insight));
+      if ('BroadcastChannel' in window) {
+        const channel = new BroadcastChannel('trainee-athlete-insights');
+        channel.postMessage(insight);
+        channel.close();
+      }
+    }
   };
 
   const applyAuthenticatedProfile = (profile: AuthenticatedProfile) => {
@@ -269,6 +293,52 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
     }
   }, [filters]);
 
+  useEffect(() => {
+    saveStoredReminders(reminders);
+  }, [reminders]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const syncKey = 'trainee-athlete-insights';
+    const syncIncoming = (event: StorageEvent) => {
+      if (event.key !== syncKey || !event.newValue) return;
+      try {
+        const parsed = JSON.parse(event.newValue) as AthleteInsight;
+        setAthleteInsights((prev) => (prev.some((item) => item.id === parsed.id) ? prev : [parsed, ...prev].slice(0, 12)));
+      } catch {
+        // ignore malformed payloads
+      }
+    };
+
+    const channel = 'BroadcastChannel' in window ? new BroadcastChannel('trainee-athlete-insights') : null;
+    channel?.addEventListener('message', (event: MessageEvent<AthleteInsight>) => {
+      const parsed = event.data;
+      if (!parsed?.id) return;
+      setAthleteInsights((prev) => (prev.some((item) => item.id === parsed.id) ? prev : [parsed, ...prev].slice(0, 12)));
+    });
+
+    window.addEventListener('storage', syncIncoming);
+
+    return () => {
+      channel?.close();
+      window.removeEventListener('storage', syncIncoming);
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      const now = Date.now();
+      setReminders((prev) => prev.map((item) => {
+        if (item.status !== 'scheduled') return item;
+        if (new Date(item.scheduledFor).getTime() > now) return item;
+        return { ...item, status: 'triggered', isUnread: true };
+      }));
+    }, 30000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
   const resetFilters = () => setFilters(DEFAULT_FILTERS);
   const toggleSaveCoach = (coachId: string) => {
     setSavedCoachIds((ids) => ids.includes(coachId) ? ids.filter((id) => id !== coachId) : [...ids, coachId]);
@@ -312,6 +382,7 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
       currentUser, login, logout, notifications, addNotification, clearNotifications, unreadCount,
       isCreateListingOpen, setIsCreateListingOpen, activeMeetingBooking, setActiveMeetingBooking,
       isNotificationsOpen, setIsNotificationsOpen, reminders, addReminder, markReminderAsRead, dismissReminder, markReminderAsCompleted,
+      athleteInsights, addAthleteInsight,
     }}>
       {children}
     </AppContext.Provider>

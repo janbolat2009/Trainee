@@ -19,7 +19,8 @@ const wellbeingOptions = [
 export const WellbeingModal: React.FC<WellbeingModalProps> = ({ isOpen, onClose, onSubmitWellbeing }) => {
   const [selected, setSelected] = useState<string>('fatigue');
   const [note, setNote] = useState('');
-  const { currentProfile } = useApp();
+  const { currentProfile, addAthleteInsight } = useApp();
+  const profile = currentProfile;
 
   if (!isOpen) return null;
 
@@ -80,7 +81,16 @@ export const WellbeingModal: React.FC<WellbeingModalProps> = ({ isOpen, onClose,
 
           <button
             onClick={() => {
-              onSubmitWellbeing(selected, note.trim());
+              const trimmedNote = note.trim();
+              onSubmitWellbeing(selected, trimmedNote);
+              addAthleteInsight({
+                athleteId: profile?.profile.id ?? 'athlete',
+                athleteName: profile?.profile.name ?? 'Athlete',
+                mood: selected,
+                summary: `Wellbeing update: ${selected}`,
+                note: trimmedNote || 'No additional comment provided.',
+                source: 'wellbeing',
+              });
               onClose();
             }}
             className="w-full rounded-3xl bg-brand-accent py-4 text-sm font-semibold text-black transition hover:bg-brand-accentHover"

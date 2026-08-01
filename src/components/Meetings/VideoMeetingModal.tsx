@@ -34,6 +34,7 @@ export const VideoMeetingModal: React.FC<VideoMeetingModalProps> = ({ booking, o
   const [connectionState, setConnectionState] = useState<ConnectionState>('connecting');
   const [isLoading, setIsLoading] = useState(true);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
@@ -58,6 +59,7 @@ export const VideoMeetingModal: React.FC<VideoMeetingModalProps> = ({ booking, o
         if (!isMounted) return;
 
         streamRef.current = stream;
+        setPermissionError(null);
         setLocalStream(stream);
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
@@ -75,6 +77,11 @@ export const VideoMeetingModal: React.FC<VideoMeetingModalProps> = ({ booking, o
           if (remote) {
             setRemoteStream(remote);
             if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remote;
+            remote.getTracks().forEach((track) => {
+              track.addEventListener('ended', () => {
+                setRemoteStream(null);
+              });
+            });
           }
         };
 
@@ -87,6 +94,7 @@ export const VideoMeetingModal: React.FC<VideoMeetingModalProps> = ({ booking, o
             setConnectionState('connecting');
           } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
             setConnectionState('reconnecting');
+            setIsLoading(false);
           }
         };
 
@@ -130,6 +138,7 @@ export const VideoMeetingModal: React.FC<VideoMeetingModalProps> = ({ booking, o
       } catch (error) {
         console.error(error);
         setIsLoading(false);
+        setPermissionError(error instanceof Error ? error.message : 'Unable to access camera or microphone.');
         setConnectionState('disconnected');
       }
     };
@@ -223,7 +232,7 @@ export const VideoMeetingModal: React.FC<VideoMeetingModalProps> = ({ booking, o
 
         <div className="grid gap-4 p-4 lg:grid-cols-[1.2fr,0.8fr]">
           <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-brand-dark">
-            <video ref={remoteVideoRef} autoPlay playsInline muted className="h-[420px] w-full object-cover" />
+            <video ref={remoteVideoRef} autoPlay playsInline className="h-[420px] w-full object-cover" />
             {!remoteStream && (
               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-brand-dark to-[#080a10]">
                 <div className="text-center">
@@ -235,6 +244,7 @@ export const VideoMeetingModal: React.FC<VideoMeetingModalProps> = ({ booking, o
                     <Users className="mx-auto mb-3 h-8 w-8 text-brand-accent" />
                   )}
                   <p className="text-sm text-zinc-300">{isLoading ? 'Connecting to the session...' : 'Waiting for the other participant to join.'}</p>
+                  {permissionError && <p className="mt-2 text-xs text-amber-400">{permissionError}</p>}
                 </div>
               </div>
             )}

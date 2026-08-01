@@ -30,7 +30,7 @@ export const NotificationCenter: React.FC = () => {
           initial={{ y: 24, opacity: 0, scale: 0.98 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: 24, opacity: 0, scale: 0.98 }}
-          className="w-full max-w-2xl rounded-[32px] border border-brand-border bg-brand-card p-5 shadow-2xl"
+          className="w-full max-w-2xl rounded-[32px] border border-brand-border bg-brand-card p-4 shadow-2xl sm:p-5"
         >
           <div className="flex items-center justify-between border-b border-brand-border/60 pb-4">
             <div>

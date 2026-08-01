@@ -24,17 +24,28 @@ export const ChatDrawer: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageListRef = useRef<HTMLDivElement>(null);
   const realtimeChannelRef = useRef<RealtimeChannel | null>(null);
+  const previousMessageCountRef = useRef(0);
 
   const currentProfileId = currentProfile?.profile.id;
 
-  // Auto-scroll to bottom of message list
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (force = false) => {
+    const container = messageListRef.current;
+    const target = messagesEndRef.current;
+    if (!container || !target) return;
+
+    if (force || previousMessageCountRef.current !== messages.length) {
+      previousMessageCountRef.current = messages.length;
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        container.scrollTop = container.scrollHeight;
+      });
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
+    scrollToBottom(true);
   }, [messages]);
 
   // Load conversations when chat drawer opens
@@ -74,6 +85,7 @@ export const ChatDrawer: React.FC = () => {
       const msgs = await fetchConversationMessages(activeConversation.id);
       setMessages(msgs);
       setIsLoadingMsgs(false);
+      requestAnimationFrame(() => scrollToBottom(true));
 
       // Mark messages as read
       await markMessagesAsRead(activeConversation.id, currentProfileId);
@@ -123,6 +135,7 @@ export const ChatDrawer: React.FC = () => {
         if (prev.some((m) => m.id === sent.id)) return prev;
         return [...prev, sent];
       });
+      requestAnimationFrame(() => scrollToBottom(true));
 
       // Update conversation list preview
       setConversations((prev) =>
@@ -287,7 +300,7 @@ export const ChatDrawer: React.FC = () => {
               </div>
 
               {/* Message History */}
-              <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 pb-4">
+              <div ref={messageListRef} className="flex-1 p-3 sm:p-4 overflow-y-auto overscroll-contain space-y-3 pb-4">
                 {isLoadingMsgs ? (
                   <div className="h-full flex items-center justify-center text-xs text-brand-muted space-x-2">
                     <Loader2 className="w-4 h-4 animate-spin text-brand-accent" />
