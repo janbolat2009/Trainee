@@ -48,6 +48,17 @@ export const ChatDrawer: React.FC = () => {
     scrollToBottom(true);
   }, [messages]);
 
+  // Lock background scroll on mobile while the drawer is open, so the page
+  // behind it can't be dragged and the modal is the only scrollable surface.
+  useEffect(() => {
+    if (!isChatOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isChatOpen]);
+
   // Load conversations when chat drawer opens
   useEffect(() => {
     if (!isChatOpen || !currentProfileId) return;
@@ -151,21 +162,33 @@ export const ChatDrawer: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-contain p-3 py-4 sm:p-6 sm:py-6 bg-black/80 backdrop-blur-md">
+    // FIX: no outer padding / no forced scroll wrapper on mobile — those pushed
+    // the card taller than the real viewport and hid the header/close button.
+    // Padding + centering scroll wrapper now only apply from `sm:` up.
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-0 sm:overflow-y-auto sm:overscroll-contain sm:p-6 sm:py-6 bg-black/80 backdrop-blur-md">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-4xl h-[92vh] max-h-[92vh] bg-brand-card border border-brand-border rounded-3xl shadow-2xl overflow-hidden flex flex-col md:h-[620px] md:max-h-[85vh] md:flex-row"
+        // FIX: `100dvh` instead of `92vh` on mobile — `dvh` accounts for the
+        // browser's address bar / safe areas so the card always matches the
+        // real visible viewport instead of overflowing it.
+        // FIX: full-bleed (no border/radius) on mobile so nothing gets clipped;
+        // rounded card only reappears from `sm:` up.
+        className="w-full h-[100dvh] sm:h-[620px] max-w-4xl sm:max-h-[85vh] bg-brand-card border-0 sm:border sm:border-brand-border rounded-none sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row"
+        style={{
+          paddingTop: 'env(safe-area-inset-top)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
       >
         {/* Conversations Sidebar */}
         <div
-          className={`w-full md:w-80 border-r border-brand-border/60 bg-brand-dark/95 flex flex-col ${
+          className={`w-full md:w-80 border-r border-brand-border/60 bg-brand-dark/95 flex flex-col min-h-0 ${
             activeConversation ? 'hidden md:flex' : 'flex'
           }`}
         >
           {/* Sidebar Header */}
-          <div className="p-4 border-b border-brand-border/60 flex items-center justify-between">
+          <div className="p-4 border-b border-brand-border/60 flex items-center justify-between shrink-0">
             <div className="flex items-center space-x-2">
               <div className="p-2 rounded-xl bg-brand-accent/20 border border-brand-accent/40 text-brand-accent">
                 <MessageSquare className="w-4 h-4" />
@@ -181,7 +204,10 @@ export const ChatDrawer: React.FC = () => {
           </div>
 
           {/* Conversation List */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-1 pb-3">
+          {/* FIX: min-h-0 lets this flex child actually shrink so its own
+              overflow-y-auto can kick in, instead of growing to fit content
+              and pushing the header/footer off-screen. */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1 pb-3">
             {isLoadingConvs ? (
               <div className="p-4 text-center text-xs text-brand-muted space-y-2">
                 <Loader2 className="w-5 h-5 animate-spin mx-auto text-brand-accent" />
@@ -252,18 +278,18 @@ export const ChatDrawer: React.FC = () => {
 
         {/* Chat Thread View */}
         <div
-          className={`flex-1 flex flex-col bg-brand-black/90 ${
+          className={`flex-1 flex flex-col min-h-0 bg-brand-black/90 ${
             !activeConversation ? 'hidden md:flex' : 'flex'
           }`}
         >
           {activeConversation ? (
             <>
               {/* Chat Thread Header */}
-              <div className="p-4 bg-brand-dark/80 border-b border-brand-border/60 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
+              <div className="p-4 bg-brand-dark/80 border-b border-brand-border/60 flex items-center justify-between shrink-0">
+                <div className="flex items-center space-x-3 min-w-0">
                   <button
                     onClick={() => setActiveConversation(null)}
-                    className="md:hidden p-1 rounded-lg text-brand-muted hover:text-white"
+                    className="md:hidden p-1 rounded-lg text-brand-muted hover:text-white shrink-0"
                   >
                     <ArrowLeft className="w-5 h-5" />
                   </button>
@@ -272,18 +298,18 @@ export const ChatDrawer: React.FC = () => {
                     <img
                       src={activeConversation.otherUser.avatar}
                       alt={activeConversation.otherUser.name}
-                      className="w-9 h-9 rounded-xl object-cover border border-brand-border"
+                      className="w-9 h-9 rounded-xl object-cover border border-brand-border shrink-0"
                     />
                   ) : (
-                    <div className="w-9 h-9 rounded-xl bg-brand-elevated border border-brand-border flex items-center justify-center text-zinc-300">
+                    <div className="w-9 h-9 rounded-xl bg-brand-elevated border border-brand-border flex items-center justify-center text-zinc-300 shrink-0">
                       <User className="w-4 h-4" />
                     </div>
                   )}
 
-                  <div>
+                  <div className="min-w-0">
                     <div className="font-bold text-white text-xs flex items-center space-x-1.5">
-                      <span>{activeConversation.otherUser?.name ?? 'Chat'}</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="truncate">{activeConversation.otherUser?.name ?? 'Chat'}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                     </div>
                     <span className="text-[10px] text-brand-muted font-mono uppercase">
                       {activeConversation.otherUser?.role ?? 'User'} • REALTIME ACTIVE
@@ -293,14 +319,20 @@ export const ChatDrawer: React.FC = () => {
 
                 <button
                   onClick={() => setIsChatOpen(false)}
-                  className="p-1.5 rounded-lg text-brand-muted hover:text-white hover:bg-white/10 transition"
+                  className="shrink-0 p-1.5 rounded-lg text-brand-muted hover:text-white hover:bg-white/10 transition"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Message History */}
-              <div ref={messageListRef} className="flex-1 p-3 sm:p-4 overflow-y-auto overscroll-contain space-y-3 pb-4">
+              {/* FIX: min-h-0 here is the key fix for "doesn't scroll on mobile" —
+                  without it this panel could grow past the visible viewport
+                  instead of scrolling internally. */}
+              <div
+                ref={messageListRef}
+                className="flex-1 min-h-0 p-3 sm:p-4 overflow-y-auto overscroll-contain space-y-3 pb-4"
+              >
                 {isLoadingMsgs ? (
                   <div className="h-full flex items-center justify-center text-xs text-brand-muted space-x-2">
                     <Loader2 className="w-4 h-4 animate-spin text-brand-accent" />
@@ -356,7 +388,8 @@ export const ChatDrawer: React.FC = () => {
               {/* Input Form */}
               <form
                 onSubmit={handleSend}
-                className="p-3 bg-brand-dark/90 border-t border-brand-border/60 flex items-center gap-2 sticky bottom-0"
+                className="p-3 bg-brand-dark/90 border-t border-brand-border/60 flex items-center gap-2 sticky bottom-0 shrink-0"
+                style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
               >
                 <input
                   type="text"
