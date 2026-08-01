@@ -24,7 +24,7 @@ export const NotificationCenter: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[60] flex items-end justify-center bg-black/75 p-3 sm:items-center sm:p-6"
+        className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto overscroll-contain bg-black/75 p-3 py-4 sm:items-center sm:p-6 sm:py-6"
       >
         <motion.div
           initial={{ y: 24, opacity: 0, scale: 0.98 }}

@@ -98,9 +98,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
     setSuccess(null);
     setIsSaving(true);
     try {
-      const payload: Record<string, unknown> = {
-        name: form.name?.trim(),
-        email: form.email?.trim(),
+      const combinedLocation = [form.country?.trim(), form.city?.trim()].filter(Boolean).join(', ');
+      const preferredPayload: Record<string, unknown> = {
+        name: form.name?.trim() || null,
+        email: form.email?.trim() || null,
         age: Number(form.age) || null,
         gender: form.gender?.trim() || null,
         country: form.country?.trim() || null,
@@ -114,9 +115,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
         availability: form.availability || null,
         time_zone: form.timeZone?.trim() || null,
         avatar: form.avatar || null,
+        location: combinedLocation || null,
       };
-      if (form.trainingGoals) payload.goals = form.trainingGoals.split(',').map((item: string) => item.trim()).filter(Boolean);
-      if (form.coachingStyle) payload.coaching_style = form.coachingStyle;
+      if (form.trainingGoals) preferredPayload.goals = form.trainingGoals.split(',').map((item: string) => item.trim()).filter(Boolean);
+      if (form.coachingStyle) preferredPayload.coaching_style = form.coachingStyle;
       if (form.password) {
         const { error: passwordError } = await supabase.auth.updateUser({ password: form.password });
         if (passwordError) throw passwordError;
@@ -125,8 +127,22 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
         const { error: emailError } = await supabase.auth.updateUser({ email: form.email });
         if (emailError) throw emailError;
       }
-      const { error: profileError } = await supabase.from('profiles').update(payload).eq('id', currentProfile.profile.id).select().single();
-      if (profileError) throw new Error(profileError.message);
+      const { error: profileError } = await supabase.from('profiles').update(preferredPayload).eq('id', currentProfile.profile.id).select().single();
+      if (profileError && /column .* does not exist/i.test(profileError.message)) {
+        const fallbackPayload: Record<string, unknown> = {
+          name: preferredPayload.name,
+          email: preferredPayload.email,
+          sport: preferredPayload.sport,
+          skill_level: preferredPayload.skill_level,
+          bio: preferredPayload.bio,
+          avatar: preferredPayload.avatar,
+          location: preferredPayload.location,
+        };
+        const { error: fallbackError } = await supabase.from('profiles').update(fallbackPayload).eq('id', currentProfile.profile.id).select().single();
+        if (fallbackError) throw new Error(fallbackError.message);
+      } else if (profileError) {
+        throw new Error(profileError.message);
+      }
       await refreshAuthenticatedProfile(currentUser ?? undefined);
       setSuccess('Profile updated successfully.');
       addNotification({ type: 'success', title: 'Profile updated', message: 'Your account details have been saved.' });
@@ -142,7 +158,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
 
   return (
     <AnimatePresence>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-3 sm:p-6">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto overscroll-contain bg-black/80 p-3 py-4 sm:p-6 sm:py-6">
         <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 24, opacity: 0 }} className="w-full max-w-2xl max-h-[92vh] overflow-hidden rounded-[28px] border border-brand-border bg-brand-card shadow-2xl">
           <div className="flex items-center justify-between border-b border-brand-border/60 p-4 sm:p-5">
             <div>

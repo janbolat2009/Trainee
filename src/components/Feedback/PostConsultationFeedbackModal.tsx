@@ -16,7 +16,7 @@ export const PostConsultationFeedbackModal: React.FC<FeedbackModalProps> = ({ is
   if (!isOpen || !booking) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-contain bg-black/80 p-4 py-4 backdrop-blur-sm sm:py-6">
       <div className="w-full max-w-2xl rounded-[28px] bg-[#111318] border border-white/10 shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-white/10">
           <div>

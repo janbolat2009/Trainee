@@ -149,7 +149,7 @@ export const OnboardingModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-contain p-4 py-4 bg-black/80 backdrop-blur-md sm:py-6">
 
       {/* Modal Container */}
       <motion.div

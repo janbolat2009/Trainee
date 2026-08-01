@@ -25,7 +25,7 @@ export const LoginModal = () => {
     };
 
     return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-contain bg-black/70 p-3 py-4 sm:p-6 sm:py-6">
 
         <div className="bg-zinc-900 rounded-xl p-8 w-[420px] space-y-5">
 

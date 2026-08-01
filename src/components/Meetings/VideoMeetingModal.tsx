@@ -207,7 +207,7 @@ export const VideoMeetingModal: React.FC<VideoMeetingModalProps> = ({ booking, o
   if (!booking) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-3 backdrop-blur-md">
+    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto overscroll-contain bg-black/85 p-3 py-4 backdrop-blur-md sm:py-6">
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-6xl overflow-hidden rounded-[32px] border border-white/10 bg-[#0b0f17] shadow-2xl">
         <div className="flex flex-col gap-4 border-b border-white/10 p-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
