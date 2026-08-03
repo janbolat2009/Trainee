@@ -176,7 +176,24 @@ export const DiscoveryView: React.FC = () => {
   }, []);
 
   const filteredCoaches = useMemo(() => {
-    const query = filters.searchQuery.trim().toLowerCase();
+  const c = coachesList[0];
+  if (c) {
+    console.log('Поля первого тренера:', {
+      hourlyRate: c.hourlyRate,
+      rating: c.rating,
+      yearsExperience: c.yearsExperience,
+      availability: c.availability,
+      availabilityWindow: c.availabilityWindow,
+      trainingFormat: c.trainingFormat,
+      coachType: c.coachType,
+      coachingStyle: c.coachingStyle,
+      languages: c.languages,
+      isVerified: c.isVerified,
+    });
+  }
+  console.log('Всего тренеров:', coachesList.length);
+
+  const query = filters.searchQuery.trim().toLowerCase();
     const normalizedLanguages = filters.languages.map((language) => language.toLowerCase());
 
     return coachesList.filter((coach) => {
@@ -197,7 +214,13 @@ export const DiscoveryView: React.FC = () => {
         const sportMatches = [coach.sport, ...(coach.secondarySports ?? [])].some((value) => value.toLowerCase() === filters.sport.toLowerCase());
         if (!sportMatches) return false;
       }
-      if (coach.hourlyRate < filters.priceRange.min || coach.hourlyRate > filters.priceRange.max) return false;
+      if (
+  typeof coach.hourlyRate === 'number' &&
+  coach.hourlyRate > 0 &&
+  (coach.hourlyRate < filters.priceRange.min || coach.hourlyRate > filters.priceRange.max)
+) {
+  return false;
+}
       if (filters.minRating > 0 && coach.rating < filters.minRating) return false;
       if (filters.verifiedOnly && !coach.isVerified) return false;
       if (filters.coachingStyle !== 'All' && coach.coachingStyle !== filters.coachingStyle) return false;
@@ -217,6 +240,7 @@ export const DiscoveryView: React.FC = () => {
         const hasAllLanguages = normalizedLanguages.every((language) => coachLanguages.includes(language));
         if (!hasAllLanguages) return false;
       }
+      console.log('Прошёл фильтр:', coach.name);
       return true;
     });
   }, [coachesList, filters]);

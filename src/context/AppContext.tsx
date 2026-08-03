@@ -124,7 +124,7 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [totalUnreadChatCount, setTotalUnreadChatCount] = useState(0);
-  const [filters, setFilters] = useState<FilterState>(readStoredFilters);
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [savedCoachIds, setSavedCoachIds] = useState<string[]>(['coach-1', 'coach-2']);
   const [coachesList, setCoachesList] = useState<Coach[]>(MOCK_COACHES);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -232,15 +232,16 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   };
 
   useEffect(() => {
-    let isMounted = true;
-    const loadGuestDiscoveryData = async () => {
-      const result = await fetchProfileData();
-      if (isMounted) setCoachesList(result.coaches);
-    };
-
-    void loadGuestDiscoveryData();
-    return () => { isMounted = false; };
-  }, []);
+  let isMounted = true;
+  const loadGuestDiscoveryData = async () => {
+    const result = await fetchProfileData();
+    if (isMounted && result.coaches?.length > 0) {
+      setCoachesList(result.coaches);
+    }
+  };
+  void loadGuestDiscoveryData();
+  return () => { isMounted = false; };
+}, []);
 
   useEffect(() => {
     if (!supabase) {
@@ -287,11 +288,18 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
     };
   }, []);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
-    }
-  }, [filters]);
+  const isFirstFiltersRender = React.useRef(true);
+
+useEffect(() => {
+  if (typeof window === 'undefined') return;
+
+  if (isFirstFiltersRender.current) {
+    isFirstFiltersRender.current = false;
+    return;
+  }
+
+  window.localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+}, [filters]);
 
   useEffect(() => {
     saveStoredReminders(reminders);

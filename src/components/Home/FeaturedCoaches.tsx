@@ -11,7 +11,7 @@ export const FeaturedCoaches: React.FC = () => {
 
   const filteredCoaches = selectedSport === 'All' 
     ? coachesList
-    : coachesList.filter(c => c.sport === selectedSport || c.secondarySports.includes(selectedSport));
+    : coachesList.filter(c => c.sport === selectedSport || (c.secondarySports ?? []).includes(selectedSport));
 
   return (
     <section className="relative border-b border-white/[0.07] py-20">
