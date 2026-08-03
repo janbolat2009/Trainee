@@ -163,13 +163,29 @@ const ListingCard: React.FC<{ listing: CoachListing }> = ({ listing }) => {
 // ── Main View ─────────────────────────────────────────────────────────────────
 
 export const DiscoveryView: React.FC = () => {
-  const { filters, setFilters, resetFilters, coachesList } = useApp();
+  const { filters, setFilters, resetFilters, coachesList, isAuthenticated, currentProfile, setIsLoginOpen, setActiveTab, addNotification } = useApp();
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('grid');
   const [listings, setListings] = useState<CoachListing[]>([]);
   const [activeSection, setActiveSection] = useState<'coaches' | 'listings'>('coaches');
 
   const sports = ['All', 'Track & Field', 'Tennis', 'Football (Soccer)', 'Combat Sports', 'Swimming', 'Basketball', 'Volleyball', 'Boxing', 'MMA', 'Athletics', 'Other'];
+
+  const handleAIMatchmakingClick = () => {
+    if (!isAuthenticated) {
+      setIsLoginOpen(true);
+      return;
+    }
+    if (currentProfile?.role === 'coach') {
+      addNotification({
+        type: 'info',
+        title: 'Athlete Feature',
+        message: 'AI Matchmaking recommendations are designed for athletes searching for ideal coaches.',
+      });
+      return;
+    }
+    setActiveTab('matchmaking');
+  };
 
   useEffect(() => {
     void fetchActiveListings().then(setListings);
@@ -280,17 +296,27 @@ export const DiscoveryView: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-brand-accent/90">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>AI Discovery Engine</span>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.28em] text-brand-accent/90">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>AI Discovery Engine</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-tight mt-2">
+              Explore Verified Coaches
+            </h1>
+            <p className="text-brand-muted text-sm mt-2 max-w-2xl">
+              Find coaches by sport, language, experience, price, and availability in a single streamlined experience.
+            </p>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-tight mt-2">
-            Explore Verified Coaches
-          </h1>
-          <p className="text-brand-muted text-sm mt-2 max-w-2xl">
-            Find coaches by sport, language, experience, price, and availability in a single streamlined experience.
-          </p>
+
+          <button
+            onClick={handleAIMatchmakingClick}
+            className="flex items-center space-x-2.5 shrink-0 rounded-2xl border border-brand-accent/40 bg-brand-accent/15 px-5 py-3 text-xs font-extrabold uppercase tracking-wider text-brand-accent transition hover:bg-brand-accent/25 hover:border-brand-accent shadow-glow-accent cursor-pointer self-start sm:self-center"
+          >
+            <Sparkles className="w-4 h-4 fill-brand-accent" />
+            <span>AI Matchmaking</span>
+          </button>
         </motion.div>
 
         {/* Section Tabs */}

@@ -34,6 +34,7 @@ export const MobileNav: React.FC = () => {
 
   const coachItems: { id: ActiveTab | 'copilot' | 'chat'; label: string; icon: React.ReactNode }[] = [
     { id: 'coach-dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+    { id: 'coach-profile', label: 'Profile', icon: <User className="w-5 h-5" /> },
     { id: 'coach-listings', label: 'Listings', icon: <FileText className="w-5 h-5" /> },
     {
       id: 'chat',
@@ -49,7 +50,6 @@ export const MobileNav: React.FC = () => {
         </div>
       ),
     },
-    { id: 'coach-students', label: 'Students', icon: <Users className="w-5 h-5" /> },
     { id: 'copilot', label: 'Copilot', icon: <Bot className="w-5 h-5 text-brand-accent" /> },
   ];
 

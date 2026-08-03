@@ -12,7 +12,17 @@ const statusStyles: Record<ReminderItem['status'], string> = {
 };
 
 export const NotificationCenter: React.FC = () => {
-  const { isNotificationsOpen, setIsNotificationsOpen, reminders, markReminderAsRead, dismissReminder, markReminderAsCompleted, notifications } = useApp();
+  const {
+    isNotificationsOpen, setIsNotificationsOpen, reminders,
+    markReminderAsRead, dismissReminder, markReminderAsCompleted,
+    notifications, markAllNotificationsAsRead
+  } = useApp();
+
+  React.useEffect(() => {
+    if (isNotificationsOpen) {
+      markAllNotificationsAsRead();
+    }
+  }, [isNotificationsOpen]);
 
   const visibleReminders = reminders.slice().sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime());
 
@@ -37,9 +47,17 @@ export const NotificationCenter: React.FC = () => {
               <p className="text-[11px] uppercase tracking-[0.28em] text-brand-muted">Notification Center</p>
               <h2 className="text-xl font-semibold text-white">Upcoming reminders & sessions</h2>
             </div>
-            <button onClick={() => setIsNotificationsOpen(false)} className="rounded-full bg-white/5 p-2 text-brand-muted transition hover:bg-white/10 hover:text-white">
-              <X className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={markAllNotificationsAsRead}
+                className="text-xs text-brand-accent hover:underline font-medium px-2 py-1"
+              >
+                Mark all read
+              </button>
+              <button onClick={() => setIsNotificationsOpen(false)} className="rounded-full bg-white/5 p-2 text-brand-muted transition hover:bg-white/10 hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
           <div className="mt-5 space-y-5">

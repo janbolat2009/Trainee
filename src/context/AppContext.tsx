@@ -70,6 +70,7 @@ interface AppContextType {
   addNotification: (n: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => void;
   clearNotifications: () => void;
   unreadCount: number;
+  markAllNotificationsAsRead: () => void;
   isNotificationsOpen: boolean;
   setIsNotificationsOpen: (open: boolean) => void;
   reminders: ReminderItem[];
@@ -114,7 +115,7 @@ const readStoredFilters = (): FilterState => {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('home');
+  const [activeTabRaw, setActiveTabRaw] = useState<ActiveTab>('home');
   const [userRole, setUserRole] = useState<UserRole>('athlete');
   const [selectedCoach, setSelectedCoach] = useState<Coach>(MOCK_COACHES[0]);
   const [selectedAthlete, setSelectedAthlete] = useState<Athlete>(MOCK_ATHLETES[0]);
@@ -133,9 +134,32 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isCreateListingOpen, setIsCreateListingOpen] = useState(false);
   const [activeMeetingBooking, setActiveMeetingBooking] = useState<ConsultationBooking | null>(null);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpenState] = useState(false);
   const [reminders, setReminders] = useState<ReminderItem[]>(() => loadStoredReminders());
   const [athleteInsights, setAthleteInsights] = useState<AthleteInsight[]>([]);
+
+  const isCoachRole = userRole === 'coach' || currentProfile?.role === 'coach';
+  const activeTab = isCoachRole && activeTabRaw === 'home' ? 'coach-dashboard' : activeTabRaw;
+
+  const setActiveTab = (tab: ActiveTab) => {
+    if ((userRole === 'coach' || currentProfile?.role === 'coach') && tab === 'home') {
+      setActiveTabRaw('coach-dashboard');
+      return;
+    }
+    setActiveTabRaw(tab);
+  };
+
+  const markAllNotificationsAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setReminders((prev) => prev.map((item) => ({ ...item, isUnread: false })));
+  };
+
+  const setIsNotificationsOpen = (open: boolean) => {
+    setIsNotificationsOpenState(open);
+    if (open) {
+      markAllNotificationsAsRead();
+    }
+  };
 
   const unreadCount = notifications.filter((n) => !n.read).length + reminders.filter((item) => item.isUnread).length;
 
@@ -387,7 +411,7 @@ useEffect(() => {
       isChatOpen, setIsChatOpen, totalUnreadChatCount, setTotalUnreadChatCount,
       filters, setFilters, resetFilters, savedCoachIds, toggleSaveCoach, viewCoachDetails,
       coachesList, setCoachesList, isAuthenticated, setIsAuthenticated, isLoginOpen, setIsLoginOpen,
-      currentUser, login, logout, notifications, addNotification, clearNotifications, unreadCount,
+      currentUser, login, logout, notifications, addNotification, clearNotifications, unreadCount, markAllNotificationsAsRead,
       isCreateListingOpen, setIsCreateListingOpen, activeMeetingBooking, setActiveMeetingBooking,
       isNotificationsOpen, setIsNotificationsOpen, reminders, addReminder, markReminderAsRead, dismissReminder, markReminderAsCompleted,
       athleteInsights, addAthleteInsight,

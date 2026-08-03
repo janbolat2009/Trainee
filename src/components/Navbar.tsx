@@ -13,17 +13,18 @@ export const Navbar: React.FC = () => {
   } = useApp();
 
   const isCoach = currentProfile?.role === 'coach';
-  const profileTab: ActiveTab = isCoach ? 'coach-dashboard' : 'athlete-profile';
+  const profileTab: ActiveTab = isCoach ? 'coach-profile' : 'athlete-profile';
   const profileName = currentProfile?.profile.name ?? currentUser?.email?.split('@')[0] ?? 'Account';
   const profileAvatar = currentProfile?.profile.avatar;
 
   const navItems: { id: ActiveTab; label: string }[] = isCoach
     ? [
         { id: 'home', label: 'Home' },
+        { id: 'coach-dashboard', label: 'Dashboard' },
+        { id: 'coach-profile', label: 'My Profile' },
         { id: 'coach-listings', label: 'My Listings' },
         { id: 'coach-applications', label: 'Applications' },
         { id: 'coach-students', label: 'Students' },
-        { id: 'coach-dashboard', label: 'Dashboard' },
       ]
     : [
         { id: 'home', label: 'Home' },
@@ -35,7 +36,7 @@ export const Navbar: React.FC = () => {
   return (
     <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5">
       <div className="glass-panel mx-auto flex h-14 max-w-7xl items-center justify-between rounded-2xl px-3 sm:px-4">
-        <button onClick={() => setActiveTab('home')} className="group flex items-center gap-2.5" aria-label="Go to homepage">
+        <button onClick={() => setActiveTab(isCoach ? 'coach-dashboard' : 'home')} className="group flex items-center gap-2.5" aria-label="Go to homepage">
           <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-sm font-black tracking-tighter text-black transition-transform duration-300 group-hover:rotate-6">T.</span>
           <span className="hidden text-sm font-extrabold tracking-[0.16em] text-white sm:inline">TRAINEE</span>
         </button>

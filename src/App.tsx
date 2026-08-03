@@ -28,11 +28,18 @@ import { VideoMeetingModal } from './components/Meetings/VideoMeetingModal';
 import { NotificationCenter } from './components/Notifications/NotificationCenter';
 
 const MainContent: React.FC = () => {
-  const { activeTab } = useApp();
+  const { activeTab, currentProfile, userRole, setActiveTab } = useApp();
+  const isCoach = userRole === 'coach' || currentProfile?.role === 'coach';
+
+  React.useEffect(() => {
+    if (isCoach && activeTab === 'home') {
+      setActiveTab('coach-dashboard');
+    }
+  }, [isCoach, activeTab, setActiveTab]);
 
   return (
     <main className="min-h-screen">
-      {activeTab === 'home' && (
+      {!isCoach && activeTab === 'home' && (
         <>
           <Hero />
           <DashboardSection />
@@ -41,6 +48,8 @@ const MainContent: React.FC = () => {
           <DualCTA />
         </>
       )}
+
+      {isCoach && activeTab === 'home' && <CoachDashboardView />}
 
       {activeTab === 'discovery' && <DiscoveryView />}
       {activeTab === 'matchmaking' && <MatchmakingView />}
@@ -59,21 +68,27 @@ const MainContent: React.FC = () => {
 const Footer: React.FC = () => {
   const { setActiveTab, currentProfile } = useApp();
   const isCoach = currentProfile?.role === 'coach';
-  const ownProfileTab = isCoach ? 'coach-dashboard' : 'athlete-profile';
+  const ownProfileTab = isCoach ? 'coach-profile' : 'athlete-profile';
 
   return (
     <footer className="border-t border-white/[0.07] px-4 py-8 text-xs text-zinc-500 sm:px-6">
       <div className="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2"><span className="font-semibold tracking-[0.14em] text-zinc-200">TRAINEE</span><span>© 2026</span></div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          {!isCoach && (
+            <button onClick={() => setActiveTab('home')} className="transition hover:text-white">Home</button>
+          )}
+          {isCoach && (
+            <button onClick={() => setActiveTab('coach-dashboard')} className="transition hover:text-white">Dashboard</button>
+          )}
           <button onClick={() => setActiveTab('discovery')} className="transition hover:text-white">Coaches</button>
           {!isCoach && (
-            <button onClick={() => setActiveTab('matchmaking')} className="transition hover:text-white">Find a match</button>
+            <button onClick={() => setActiveTab('matchmaking')} className="transition hover:text-white text-brand-accent font-semibold">AI Matchmaking</button>
           )}
           {isCoach && (
             <button onClick={() => setActiveTab('coach-listings')} className="transition hover:text-white">My Listings</button>
           )}
-          <button onClick={() => setActiveTab(ownProfileTab)} className="transition hover:text-white">My profile</button>
+          <button onClick={() => setActiveTab(ownProfileTab)} className="transition hover:text-white">My Profile</button>
           <span className="hidden items-center gap-1.5 text-zinc-400 sm:flex"><ShieldCheck className="h-3.5 w-3.5 text-brand-accent" />Verified profiles</span>
         </div>
       </div>

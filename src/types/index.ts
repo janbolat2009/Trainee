@@ -67,6 +67,10 @@ export interface Coach {
   joinedAt?: string;
   matchScore?: number;
   matchReasons?: string[];
+  previousTeams?: string[];
+  education?: string;
+  areasOfExpertise?: string[];
+  socialLinks?: { twitter?: string; instagram?: string; linkedin?: string; youtube?: string };
 }
 
 export interface Athlete {

@@ -77,6 +77,11 @@ const normalizeAuthenticatedCoach = (row: ProfileRow): Coach => {
     coverImage: typeof item.cover_image === 'string' ? item.cover_image : undefined,
     sport: stringValue(item.sport, 'Not specified'),
     secondarySports: arrayValue<string>(item.secondary_sports ?? item.secondarySports, []),
+    country: stringValue(item.country, ''),
+    city: stringValue(item.city, ''),
+    languagesSpoken: arrayValue<string>(item.languages_spoken ?? item.languagesSpoken, []),
+    specialization: stringValue(item.specialization, ''),
+    trainingFormat: stringValue(item.training_format ?? item.trainingFormat, 'hybrid'),
     location: stringValue(item.location, 'Not specified'),
     isVerified: item.is_verified === true || item.isVerified === true,
     verificationBadge: stringValue(item.verification_badge ?? item.verificationBadge, 'Unverified'),
@@ -97,6 +102,10 @@ const normalizeAuthenticatedCoach = (row: ProfileRow): Coach => {
     availability: validAvailability.includes(availability as Coach['availability'])
       ? (availability as Coach['availability'])
       : 'Limited Spots',
+    previousTeams: arrayValue<string>(item.previous_teams ?? item.previousTeams, []),
+    education: stringValue(item.education, ''),
+    areasOfExpertise: arrayValue<string>(item.areas_of_expertise ?? item.areasOfExpertise, []),
+    socialLinks: (item.social_links ?? item.socialLinks) as Coach['socialLinks'],
   };
 };
 

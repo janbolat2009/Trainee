@@ -6,11 +6,11 @@ import {
   ChevronRight, Sparkles, ArrowRight, Calendar,
 } from 'lucide-react';
 import { fetchCoachListings, fetchCoachApplications } from '../../services/coachListingService';
-import { fetchCoachStudents } from '../../services/progressService';
+import { fetchCoachStudents, fetchStudentLogs } from '../../services/progressService';
 import { fetchCoachBookings, saveConsultationReminder, saveConsultationFeedback } from '../../services/bookingService';
 import { ReminderModal } from '../Notifications/ReminderModal';
 import { PostConsultationFeedbackModal } from '../Feedback/PostConsultationFeedbackModal';
-import type { CoachListing, ListingApplication, CoachStudent, ConsultationBooking } from '../../types';
+import type { CoachListing, ListingApplication, CoachStudent, ConsultationBooking, AthleteProgressLog } from '../../types';
 import { VideoMeetingModal } from '../Meetings/VideoMeetingModal';
 import { AthleteInsightsPanel } from './AthleteInsightsPanel';
 
@@ -33,6 +33,7 @@ export const CoachDashboardView: React.FC = () => {
   const [applications, setApplications] = useState<ListingApplication[]>([]);
   const [students, setStudents] = useState<CoachStudent[]>([]);
   const [bookings, setBookings] = useState<ConsultationBooking[]>([]);
+  const [studentLogs, setStudentLogs] = useState<AthleteProgressLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedReminderBooking, setSelectedReminderBooking] = useState<ConsultationBooking | null>(null);
   const [selectedFeedbackBooking, setSelectedFeedbackBooking] = useState<ConsultationBooking | null>(null);
@@ -45,16 +46,18 @@ export const CoachDashboardView: React.FC = () => {
     if (!coachProfileId) return;
     const load = async () => {
       setIsLoading(true);
-      const [l, a, s, b] = await Promise.all([
+      const [l, a, s, b, logs] = await Promise.all([
         fetchCoachListings(coachProfileId),
         fetchCoachApplications(coachProfileId),
         fetchCoachStudents(coachProfileId),
         fetchCoachBookings(coachProfileId),
+        fetchStudentLogs(coachProfileId),
       ]);
       setListings(l);
       setApplications(a);
       setStudents(s);
       setBookings(b);
+      setStudentLogs(logs);
       setIsLoading(false);
     };
     void load();
@@ -130,10 +133,11 @@ export const CoachDashboardView: React.FC = () => {
             color="text-emerald-400"
           />
           <StatCard
-            icon={<TrendingUp className="w-5 h-5 text-white" />}
-            label="Avg. Progress"
-            value="—"
-            sub="log data to track"
+            icon={<TrendingUp className="w-5 h-5 text-brand-accent" />}
+            label="Logged Updates"
+            value={isLoading ? '—' : studentLogs.length}
+            sub={studentLogs.length > 0 ? 'Live student logs' : 'No logs recorded'}
+            color="text-brand-accent"
           />
           <StatCard
             icon={<Calendar className="w-5 h-5 text-brand-accent" />}
