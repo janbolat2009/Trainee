@@ -18,6 +18,7 @@ const toProgress = (row: Row): AthleteProgressLog => ({
   id: text(row.id), athleteId: text(row.athlete_id), coachId: text(row.coach_id), loggedAt: text(row.logged_at), metricType: text(row.metric_type),
   value: numeric(row.value), notes: typeof row.notes === 'string' ? row.notes : null, wellbeing: numeric(row.wellbeing), fatigue: numeric(row.fatigue),
   painLevel: numeric(row.pain_level), sleepHours: numeric(row.sleep_hours), flag: text(row.flag, 'normal') as AthleteProgressLog['flag'],
+  mood: typeof row.mood === 'string' ? row.mood : null,
 });
 
 export type ListingDraft = Omit<CoachListing, 'id' | 'coachId' | 'createdAt' | 'mediaUrls'> & { mediaUrls?: string[] };
