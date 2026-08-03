@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Camera, CameraOff, Mic, MicOff, MonitorUp, PhoneOff, Loader2, Wifi, WifiOff, Users } from 'lucide-react';
 import type { ConsultationBooking } from '../../types';
+import { useApp } from '../../context/AppContext';
+import { createSignalingChannel, type SignalMessage, type SignalingChannel } from '../../services/signalingService';
 
 interface VideoMeetingModalProps {
   booking: ConsultationBooking | null;
@@ -10,22 +12,21 @@ interface VideoMeetingModalProps {
 
 type ConnectionState = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
 
-interface SignalMessage {
-  type: 'offer' | 'answer' | 'candidate' | 'leave';
-  offer?: RTCSessionDescriptionInit;
-  answer?: RTCSessionDescriptionInit;
-  candidate?: RTCIceCandidateInit;
-}
-
-const getSignalChannelName = (meetingId: string) => `apexlink-webrtc-${meetingId}`;
-
 const formatDuration = (seconds: number) => {
   const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
   const secs = (seconds % 60).toString().padStart(2, '0');
   return `${mins}:${secs}`;
 };
 
+const ICE_SERVERS: RTCIceServer[] = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+];
+
 export const VideoMeetingModal: React.FC<VideoMeetingModalProps> = ({ booking, onClose }) => {
+  const { currentProfile } = useApp();
+  const userId = currentProfile?.profile.id ?? null;
+
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [isMicMuted, setIsMicMuted] = useState(false);
@@ -35,19 +36,29 @@ export const VideoMeetingModal: React.FC<VideoMeetingModalProps> = ({ booking, o
   const [isLoading, setIsLoading] = useState(true);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [permissionError, setPermissionError] = useState<string | null>(null);
+
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
-  const channelRef = useRef<BroadcastChannel | null>(null);
-  const offerSentRef = useRef(false);
+  const signalingRef = useRef<SignalingChannel | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Perfect-negotiation bookkeeping (avoids offer/answer collisions).
+  const politeRef = useRef(false);
+  const makingOfferRef = useRef(false);
+  const ignoreOfferRef = useRef(false);
+  const isSettingRemoteAnswerPendingRef = useRef(false);
+
   useEffect(() => {
-    if (!booking) return undefined;
+    if (!booking || !userId) return undefined;
 
     let isMounted = true;
-    const channel = new BroadcastChannel(getSignalChannelName(booking.id));
-    channelRef.current = channel;
+
+    // The participant with the lexicographically smaller id is "polite":
+    // they back off instead of racing when both sides send an offer at once.
+    politeRef.current = userId < (booking.coachId === userId ? booking.athleteId : booking.coachId);
+
+    console.log('[WebRTC] Starting meeting session', { meetingId: booking.id, userId, polite: politeRef.current });
 
     const start = async () => {
       try {
@@ -56,16 +67,22 @@ export const VideoMeetingModal: React.FC<VideoMeetingModalProps> = ({ booking, o
         }
 
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        if (!isMounted) return;
+        if (!isMounted) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        console.log('[WebRTC] Local media acquired', {
+          audioTracks: stream.getAudioTracks().length,
+          videoTracks: stream.getVideoTracks().length,
+        });
 
         streamRef.current = stream;
         setPermissionError(null);
         setLocalStream(stream);
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
-        const pc = new RTCPeerConnection({
-          iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-        });
+        const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
         peerConnectionRef.current = pc;
 
         stream.getTracks().forEach((track) => {
@@ -73,70 +90,123 @@ export const VideoMeetingModal: React.FC<VideoMeetingModalProps> = ({ booking, o
         });
 
         pc.ontrack = (event) => {
+          console.log('[WebRTC] Remote track received', event.track.kind);
           const [remote] = event.streams;
           if (remote) {
             setRemoteStream(remote);
             if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remote;
             remote.getTracks().forEach((track) => {
               track.addEventListener('ended', () => {
+                console.log('[WebRTC] Remote track ended', track.kind);
                 setRemoteStream(null);
               });
             });
           }
         };
 
-        pc.onconnectionstatechange = () => {
-          if (!pc.connectionState) return;
-          if (pc.connectionState === 'connected') {
+        pc.oniceconnectionstatechange = () => {
+          console.log('[WebRTC] ICE connection state:', pc.iceConnectionState);
+          if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
             setConnectionState('connected');
             setIsLoading(false);
-          } else if (pc.connectionState === 'connecting') {
+          } else if (pc.iceConnectionState === 'checking') {
             setConnectionState('connecting');
-          } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+          } else if (pc.iceConnectionState === 'disconnected') {
             setConnectionState('reconnecting');
-            setIsLoading(false);
+          } else if (pc.iceConnectionState === 'failed') {
+            console.warn('[WebRTC] ICE connection failed, attempting restart');
+            setConnectionState('reconnecting');
+            void pc.restartIce();
           }
+        };
+
+        pc.onconnectionstatechange = () => {
+          console.log('[WebRTC] Peer connection state:', pc.connectionState);
         };
 
         pc.onicecandidate = (event) => {
           if (event.candidate) {
-            channel.postMessage({ type: 'candidate', candidate: event.candidate.toJSON() });
+            signalingRef.current?.send({ type: 'candidate', candidate: event.candidate.toJSON() });
           }
         };
 
-        channel.onmessage = async (event: MessageEvent<SignalMessage>) => {
-          const message = event.data;
-          if (!message || !pc) return;
-
+        // Perfect negotiation: automatically (re)negotiate whenever tracks change.
+        pc.onnegotiationneeded = async () => {
           try {
+            makingOfferRef.current = true;
+            const offer = await pc.createOffer();
+            if (pc.signalingState !== 'stable') return;
+            await pc.setLocalDescription(offer);
+            console.log('[WebRTC] Sending offer');
+            signalingRef.current?.send({ type: 'offer', offer: pc.localDescription!.toJSON() });
+          } catch (error) {
+            console.error('[WebRTC] Negotiation error', error);
+          } finally {
+            makingOfferRef.current = false;
+          }
+        };
+
+        const signaling = createSignalingChannel(booking.id, userId, async (message: SignalMessage) => {
+          try {
+            if (message.type === 'join') {
+              // A late joiner announces itself; if we already have local media, renegotiate.
+              return;
+            }
+
             if (message.type === 'offer' && message.offer) {
-              await pc.setRemoteDescription(new RTCSessionDescription(message.offer));
+              const offerCollision =
+                message.offer.type === 'offer' &&
+                (makingOfferRef.current || pc.signalingState !== 'stable');
+
+              ignoreOfferRef.current = !politeRef.current && offerCollision;
+              if (ignoreOfferRef.current) {
+                console.log('[WebRTC] Ignoring colliding offer (impolite peer)');
+                return;
+              }
+
+              if (offerCollision) {
+                await Promise.all([
+                  pc.setLocalDescription({ type: 'rollback' }),
+                  pc.setRemoteDescription(new RTCSessionDescription(message.offer)),
+                ]);
+              } else {
+                await pc.setRemoteDescription(new RTCSessionDescription(message.offer));
+              }
+
               const answer = await pc.createAnswer();
               await pc.setLocalDescription(answer);
-              channel.postMessage({ type: 'answer', answer });
-              setConnectionState('connecting');
+              console.log('[WebRTC] Sending answer');
+              signalingRef.current?.send({ type: 'answer', answer: pc.localDescription!.toJSON() });
             } else if (message.type === 'answer' && message.answer) {
-              await pc.setRemoteDescription(new RTCSessionDescription(message.answer));
-              setConnectionState('connecting');
+              if (pc.signalingState === 'have-local-offer') {
+                isSettingRemoteAnswerPendingRef.current = true;
+                await pc.setRemoteDescription(new RTCSessionDescription(message.answer));
+                isSettingRemoteAnswerPendingRef.current = false;
+                console.log('[WebRTC] Remote answer applied');
+              }
             } else if (message.type === 'candidate' && message.candidate) {
-              await pc.addIceCandidate(new RTCIceCandidate(message.candidate));
+              try {
+                await pc.addIceCandidate(new RTCIceCandidate(message.candidate));
+              } catch (error) {
+                if (!ignoreOfferRef.current) {
+                  console.error('[WebRTC] Failed to add ICE candidate', error);
+                }
+              }
             } else if (message.type === 'leave') {
+              console.log('[WebRTC] Remote participant left');
               setConnectionState('disconnected');
+              setRemoteStream(null);
             }
           } catch (error) {
-            console.error('WebRTC signal error', error);
+            console.error('[WebRTC] Signal handling error', error);
             setConnectionState('reconnecting');
           }
-        };
+        });
 
-        if (!offerSentRef.current) {
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          channel.postMessage({ type: 'offer', offer });
-          offerSentRef.current = true;
-        }
+        signalingRef.current = signaling;
+        signaling?.send({ type: 'join' });
       } catch (error) {
-        console.error(error);
+        console.error('[WebRTC] Failed to start session', error);
         setIsLoading(false);
         setPermissionError(error instanceof Error ? error.message : 'Unable to access camera or microphone.');
         setConnectionState('disconnected');
@@ -152,9 +222,9 @@ export const VideoMeetingModal: React.FC<VideoMeetingModalProps> = ({ booking, o
     return () => {
       isMounted = false;
       window.clearInterval(interval);
-      channel.close();
-      channelRef.current = null;
-      offerSentRef.current = false;
+      signalingRef.current?.send({ type: 'leave' });
+      signalingRef.current?.cleanup();
+      signalingRef.current = null;
       if (peerConnectionRef.current) {
         peerConnectionRef.current.close();
         peerConnectionRef.current = null;
@@ -164,7 +234,7 @@ export const VideoMeetingModal: React.FC<VideoMeetingModalProps> = ({ booking, o
       setLocalStream(null);
       setRemoteStream(null);
     };
-  }, [booking?.id]);
+  }, [booking?.id, userId]);
 
   const participantLabel = useMemo(() => {
     if (!booking) return 'Meeting';
@@ -199,17 +269,24 @@ export const VideoMeetingModal: React.FC<VideoMeetingModalProps> = ({ booking, o
       setIsScreenSharing(true);
       screenTrack.addEventListener('ended', () => {
         setIsScreenSharing(false);
+        const cameraTrack = streamRef.current?.getVideoTracks()[0];
+        if (cameraTrack && sender) {
+          void sender.replaceTrack(cameraTrack);
+        }
       }, { once: true });
       const currentTrack = localStream.getVideoTracks()[0];
-      if (currentTrack) currentTrack.stop();
-      setLocalStream((prev) => prev ? new MediaStream([screenTrack, ...(prev.getAudioTracks() ?? [])]) : null);
+      if (currentTrack && currentTrack !== screenTrack) currentTrack.stop();
+      setLocalStream((prev) => (prev ? new MediaStream([screenTrack, ...(prev.getAudioTracks() ?? [])]) : null));
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = new MediaStream([screenTrack]);
+      }
     } catch (error) {
-      console.error(error);
+      console.error('[WebRTC] Screen share failed', error);
     }
   };
 
   const leaveMeeting = () => {
-    channelRef.current?.postMessage({ type: 'leave' });
+    signalingRef.current?.send({ type: 'leave' });
     onClose();
   };
 
@@ -281,9 +358,9 @@ export const VideoMeetingModal: React.FC<VideoMeetingModalProps> = ({ booking, o
                 {isCameraOff ? <CameraOff className="mr-2 inline h-4 w-4" /> : <Camera className="mr-2 inline h-4 w-4" />}
                 {isCameraOff ? 'Turn camera on' : 'Turn camera off'}
               </button>
-              <button onClick={toggleScreenShare} className="rounded-2xl border border-brand-border bg-brand-dark/70 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10">
+              <button onClick={toggleScreenShare} disabled={isScreenSharing} className="rounded-2xl border border-brand-border bg-brand-dark/70 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50">
                 <MonitorUp className="mr-2 inline h-4 w-4" />
-                Share screen
+                {isScreenSharing ? 'Sharing…' : 'Share screen'}
               </button>
               <button onClick={leaveMeeting} className="rounded-2xl border border-rose-500/30 bg-rose-500/12 px-4 py-3 text-sm font-semibold text-rose-200 transition hover:bg-rose-500/22">
                 <PhoneOff className="mr-2 inline h-4 w-4" />

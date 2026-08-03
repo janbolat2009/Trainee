@@ -18,6 +18,7 @@ const normalizeLog = (row: Row): AthleteProgressLog => ({
   metricType: str(row.metric_type, 'general'),
   value: num(row.value),
   notes: typeof row.notes === 'string' ? row.notes : null,
+  mood: typeof row.mood === 'string' ? row.mood : null,
   wellbeing: typeof row.wellbeing === 'number' ? row.wellbeing : null,
   fatigue: typeof row.fatigue === 'number' ? row.fatigue : null,
   painLevel: typeof row.pain_level === 'number' ? row.pain_level : null,
@@ -53,42 +54,70 @@ export const fetchStudentLogs = async (
 
 export type CreateLogPayload = {
   athleteId: string;
-  coachId: string;
+  // Опционально: если не передан, coach_id автоматически резолвится
+  // триггером БД (set_progress_log_coach_id) по принятой заявке тренера.
+  coachId?: string;
   metricType: string;
   value?: number;
   notes?: string;
+  mood?: string;
   wellbeing?: number;
   fatigue?: number;
   painLevel?: number;
   sleepHours?: number;
 };
 
+// Теги настроения, требующие внимания тренера, даже без числовых метрик
+const MOOD_ATTENTION_TAGS = new Set(['sadness', 'apathy']);
+
 export const createProgressLog = async (payload: CreateLogPayload): Promise<AthleteProgressLog | null> => {
   if (!supabase) return null;
 
-  // Auto-flag based on pain or fatigue
+  // Auto-flag based on pain, fatigue, or a concerning mood tag
   let flag: ProgressFlag = 'normal';
   if ((payload.painLevel ?? 0) >= 7 || (payload.fatigue ?? 0) >= 8) flag = 'risk';
   else if ((payload.painLevel ?? 0) >= 4 || (payload.fatigue ?? 0) >= 6) flag = 'attention';
+  else if (payload.mood && MOOD_ATTENTION_TAGS.has(payload.mood)) flag = 'attention';
+
+  const insertPayload: Record<string, unknown> = {
+    athlete_id: payload.athleteId,
+    metric_type: payload.metricType,
+    value: payload.value ?? null,
+    notes: payload.notes ?? null,
+    mood: payload.mood ?? null,
+    wellbeing: payload.wellbeing ?? null,
+    fatigue: payload.fatigue ?? null,
+    pain_level: payload.painLevel ?? null,
+    sleep_hours: payload.sleepHours ?? null,
+    flag,
+  };
+  // coach_id намеренно не отправляем, если не передан явно — БД сама
+  // подставит его через триггер на основании принятой заявки тренера.
+  if (payload.coachId) insertPayload.coach_id = payload.coachId;
 
   const { data, error } = await supabase
     .from('athlete_progress_logs')
-    .insert({
-      athlete_id: payload.athleteId,
-      coach_id: payload.coachId,
-      metric_type: payload.metricType,
-      value: payload.value ?? null,
-      notes: payload.notes ?? null,
-      wellbeing: payload.wellbeing ?? null,
-      fatigue: payload.fatigue ?? null,
-      pain_level: payload.painLevel ?? null,
-      sleep_hours: payload.sleepHours ?? null,
-      flag,
-    })
+    .insert(insertPayload)
     .select()
     .single();
   if (error) { console.error('createProgressLog:', error.message); return null; }
   return normalizeLog(data as Row);
+};
+
+// Специальный хелпер для Well-being Survey. Привязка к тренеру и
+// timestamp (logged_at default now()) обрабатываются автоматически —
+// вызывающему коду нужен только athleteId, mood и опциональная заметка.
+export const createWellbeingCheckIn = async (params: {
+  athleteId: string;
+  mood: string;
+  note?: string;
+}): Promise<AthleteProgressLog | null> => {
+  return createProgressLog({
+    athleteId: params.athleteId,
+    metricType: 'wellbeing_checkin',
+    mood: params.mood,
+    notes: params.note && params.note.length > 0 ? params.note : undefined,
+  });
 };
 
 // ── Students (accepted applications → linked athletes) ────────────────────────

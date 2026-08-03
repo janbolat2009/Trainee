@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, HeartPulse, Smile, Zap, CloudRain, Moon } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { createWellbeingCheckIn } from '../../services/progressService';
 
 interface WellbeingModalProps {
   isOpen: boolean;
@@ -19,10 +20,50 @@ const wellbeingOptions = [
 export const WellbeingModal: React.FC<WellbeingModalProps> = ({ isOpen, onClose, onSubmitWellbeing }) => {
   const [selected, setSelected] = useState<string>('fatigue');
   const [note, setNote] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { currentProfile, addAthleteInsight } = useApp();
   const profile = currentProfile;
 
   if (!isOpen) return null;
+
+  const handleSubmit = async () => {
+    const athleteId = profile?.profile.id;
+    if (!athleteId) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    const trimmedNote = note.trim();
+
+    // Реальное сохранение: пишет в athlete_progress_logs, coach_id
+    // подставляется автоматически на стороне БД (триггер), тренер
+    // видит запись сразу через свою realtime-подписку.
+    const savedLog = await createWellbeingCheckIn({
+      athleteId,
+      mood: selected,
+      note: trimmedNote,
+    });
+
+    setIsSubmitting(false);
+
+    if (!savedLog) {
+      setError('Не удалось сохранить чек-ин. Проверьте, что у вас есть назначенный тренер, и попробуйте снова.');
+      return;
+    }
+
+    onSubmitWellbeing(selected, trimmedNote);
+    addAthleteInsight({
+      athleteId,
+      athleteName: profile?.profile.name ?? 'Athlete',
+      mood: selected,
+      summary: `Wellbeing update: ${selected}`,
+      note: trimmedNote || 'No additional comment provided.',
+      source: 'wellbeing',
+    });
+    setNote('');
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-contain bg-black/80 p-4 py-4 backdrop-blur-sm sm:py-6">
@@ -79,23 +120,16 @@ export const WellbeingModal: React.FC<WellbeingModalProps> = ({ isOpen, onClose,
             />
           </div>
 
+          {error && (
+            <p className="text-xs text-red-400">{error}</p>
+          )}
+
           <button
-            onClick={() => {
-              const trimmedNote = note.trim();
-              onSubmitWellbeing(selected, trimmedNote);
-              addAthleteInsight({
-                athleteId: profile?.profile.id ?? 'athlete',
-                athleteName: profile?.profile.name ?? 'Athlete',
-                mood: selected,
-                summary: `Wellbeing update: ${selected}`,
-                note: trimmedNote || 'No additional comment provided.',
-                source: 'wellbeing',
-              });
-              onClose();
-            }}
-            className="w-full rounded-3xl bg-brand-accent py-4 text-sm font-semibold text-black transition hover:bg-brand-accentHover"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="w-full rounded-3xl bg-brand-accent py-4 text-sm font-semibold text-black transition hover:bg-brand-accentHover disabled:opacity-60"
           >
-            Send support request
+            {isSubmitting ? 'Sending…' : 'Send support request'}
           </button>
         </div>
       </div>

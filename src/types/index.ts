@@ -277,6 +277,7 @@ export interface AthleteProgressLog {
   painLevel: number | null;
   sleepHours: number | null;
   flag: ProgressFlag;
+  mood: string | null;
 }
 
 // ── Realtime In-App Chat Interfaces ──────────────────────────────────────────
