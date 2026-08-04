@@ -373,7 +373,7 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
               </div>
 
               {/* Date & Time fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4 w-[90%] sm:w-full mx-auto box-border">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4 w-[80%] sm:w-full mx-auto box-border">
                 <div className="space-y-1.5 w-full box-border">
                   <label className="text-xs font-mono uppercase text-brand-muted">Date</label>
                   <div className="relative w-full box-border">
