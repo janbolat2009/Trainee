@@ -151,24 +151,28 @@ export const CoachProfileView: React.FC = () => {
               </>
             )}
 
-            <button
-              onClick={() => toggleSaveCoach(coach.id)}
-              className={`p-3 rounded-xl border transition min-h-[44px] min-w-[44px] flex items-center justify-center ${
-                isSaved
-                  ? 'bg-brand-accent/20 border-brand-accent text-brand-accent'
-                  : 'bg-brand-card border-brand-border text-brand-muted hover:text-white'
-              }`}
-            >
-              <Bookmark className={`w-5 h-5 ${isSaved ? 'fill-brand-accent' : ''}`} />
-            </button>
+            {!isOwnProfile && (
+              <>
+                <button
+                  onClick={() => toggleSaveCoach(coach.id)}
+                  className={`p-3 rounded-xl border transition min-h-[44px] min-w-[44px] flex items-center justify-center ${
+                    isSaved
+                      ? 'bg-brand-accent/20 border-brand-accent text-brand-accent'
+                      : 'bg-brand-card border-brand-border text-brand-muted hover:text-white'
+                  }`}
+                >
+                  <Bookmark className={`w-5 h-5 ${isSaved ? 'fill-brand-accent' : ''}`} />
+                </button>
 
-            <button
-              onClick={() => void handleBooking()}
-              className="flex items-center space-x-2 rounded-xl bg-white px-5 py-3 text-xs font-semibold text-black transition hover:bg-zinc-200 shadow-glow-white min-h-[44px]"
-            >
-              <Calendar className="w-4 h-4" />
-              <span>Book Consultation</span>
-            </button>
+                <button
+                  onClick={() => void handleBooking()}
+                  className="flex items-center space-x-2 rounded-xl bg-white px-5 py-3 text-xs font-semibold text-black transition hover:bg-zinc-200 shadow-glow-white min-h-[44px]"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>Book Consultation</span>
+                </button>
+              </>
+            )}
           </div>
         </motion.div>
 

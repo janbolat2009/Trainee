@@ -187,11 +187,11 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          className="relative w-full max-w-2xl bg-[#11141a] border border-white/10 rounded-[24px] sm:rounded-[32px] p-4 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto overflow-x-hidden min-w-0 max-w-full box-border"
+          className="relative w-[92vw] sm:w-full max-w-xl bg-[#11141a] border border-white/10 rounded-[28px] sm:rounded-[32px] p-4 sm:p-7 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto overflow-x-hidden box-border mx-auto"
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-white/10 pb-4 min-w-0 max-w-full">
-            <div className="min-w-0 max-w-full">
+          <div className="flex items-center justify-between border-b border-white/10 pb-3.5 w-full box-border">
+            <div className="min-w-0 flex-1">
               <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-brand-accent/10 border border-brand-accent/30 text-brand-accent text-xs font-mono font-bold uppercase mb-1">
                 <Calendar className="w-3.5 h-3.5" />
                 <span>Trainer Dashboard ({getUserTimezoneOffset()})</span>
@@ -214,8 +214,8 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
 
           {/* Mode: List View */}
           {mode === 'list' && (
-            <div className="space-y-4 min-w-0 max-w-full">
-              <div className="flex items-center justify-between gap-2 min-w-0 max-w-full">
+            <div className="space-y-4 w-full box-border">
+              <div className="flex items-center justify-between gap-2 w-full box-border">
                 <div className="text-xs font-mono uppercase text-brand-muted tracking-wider truncate">
                   Configured Time Slots ({slots.length})
                 </div>
@@ -231,13 +231,13 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
               </div>
 
               {isLoading ? (
-                <div className="space-y-3">
+                <div className="space-y-3 w-full">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="h-16 rounded-2xl bg-white/5 animate-pulse" />
                   ))}
                 </div>
               ) : slots.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-white/10 p-6 sm:p-8 text-center space-y-3 min-w-0 max-w-full">
+                <div className="rounded-3xl border border-dashed border-white/10 p-6 sm:p-8 text-center space-y-3 w-full box-border">
                   <Calendar className="w-10 h-10 text-brand-muted mx-auto" />
                   <p className="text-sm text-zinc-300 font-medium break-words">No time slots configured yet.</p>
                   <p className="text-xs text-brand-muted max-w-sm mx-auto break-words">
@@ -253,20 +253,20 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
                   </button>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1 min-w-0 max-w-full">
+                <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1 w-full box-border">
                   {slots.map((slot) => {
                     const { formattedDate, formattedStart, formattedEnd, tzLabel } = formatTimeRangeInUserTimezone(slot.startsAt, slot.endsAt);
 
                     return (
                       <div
                         key={slot.id}
-                        className={`p-3.5 sm:p-4 rounded-2xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0 max-w-full box-border ${
+                        className={`p-3.5 sm:p-4 rounded-2xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full box-border ${
                           slot.isActive
                             ? 'bg-brand-card/90 border-white/10'
                             : 'bg-white/[0.02] border-white/5 opacity-60'
                         }`}
                       >
-                        <div className="space-y-1.5 min-w-0 max-w-full">
+                        <div className="space-y-1.5 min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                             <span className="font-bold text-white text-xs sm:text-sm">{formattedDate}</span>
                             <span className="px-2 py-0.5 rounded-md bg-white/10 text-zinc-300 text-xs font-mono">
@@ -293,8 +293,8 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
                           </div>
 
                           <div className="flex items-center space-x-1.5 text-xs text-brand-muted">
-                            {slot.format === 'online' ? <Laptop className="w-3.5 h-3.5 text-sky-400" /> : <MapPin className="w-3.5 h-3.5 text-amber-400" />}
-                            <span className="truncate max-w-md">{slot.location || (slot.format === 'online' ? 'Video link provided upon booking' : 'Physical location')}</span>
+                            {slot.format === 'online' ? <Laptop className="w-3.5 h-3.5 text-sky-400 shrink-0" /> : <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                            <span className="truncate max-w-full">{slot.location || (slot.format === 'online' ? 'Video link provided upon booking' : 'Physical location')}</span>
                           </div>
                         </div>
 
@@ -333,8 +333,8 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
 
           {/* Mode: Add / Edit Form */}
           {(mode === 'add' || mode === 'edit') && (
-            <form onSubmit={handleSaveSlot} className="space-y-4 sm:space-y-5 min-w-0 max-w-full box-border">
-              <div className="flex items-center justify-between pb-2 border-b border-white/10 min-w-0 max-w-full">
+            <form onSubmit={handleSaveSlot} className="space-y-4 w-full box-border flex flex-col items-center">
+              <div className="flex items-center justify-between pb-2 border-b border-white/10 w-[90%] sm:w-full mx-auto box-border">
                 <h3 className="text-base font-bold text-white break-words">
                   {mode === 'add' ? 'Add New Time Slot' : 'Edit Time Slot'}
                 </h3>
@@ -348,15 +348,15 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
               </div>
 
               {/* Format selection */}
-              <div className="space-y-1.5 min-w-0 max-w-full">
+              <div className="space-y-1.5 w-[90%] sm:w-full mx-auto box-border">
                 <label className="text-xs font-mono uppercase text-brand-muted">Session Format</label>
-                <div className="grid grid-cols-2 gap-2.5 sm:gap-3 min-w-0 max-w-full">
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-3 w-full box-border">
                   {(['online', 'offline'] as ConsultationFormat[]).map((fmt) => (
                     <button
                       key={fmt}
                       type="button"
                       onClick={() => setFormat(fmt)}
-                      className={`p-3 sm:p-3.5 rounded-2xl border text-left transition flex items-center justify-between min-h-[44px] min-w-0 max-w-full ${
+                      className={`p-3 sm:p-3.5 rounded-2xl border text-left transition flex items-center justify-between min-h-[44px] w-full box-border ${
                         format === fmt
                           ? 'bg-brand-accent/10 border-brand-accent text-white'
                           : 'bg-brand-dark/50 border-white/10 text-brand-muted hover:border-white/20'
@@ -373,48 +373,48 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
               </div>
 
               {/* Date & Time fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 min-w-0 max-w-full">
-                <div className="space-y-1.5 min-w-0 max-w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4 w-[90%] sm:w-full mx-auto box-border">
+                <div className="space-y-1.5 w-full box-border">
                   <label className="text-xs font-mono uppercase text-brand-muted">Date</label>
-                  <div className="relative min-w-0 max-w-full">
+                  <div className="relative w-full box-border">
                     <input
                       type="date"
                       value={slotDate}
                       onChange={(e) => setSlotDate(e.target.value)}
-                      className="w-full max-w-full min-w-0 box-border px-3 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px]"
+                      className="w-full box-border block px-3 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px]"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1.5 min-w-0 max-w-full">
+                <div className="space-y-1.5 w-full box-border">
                   <label className="text-xs font-mono uppercase text-brand-muted">Start Time</label>
-                  <div className="relative min-w-0 max-w-full">
+                  <div className="relative w-full box-border">
                     <Clock className="w-4 h-4 text-zinc-500 absolute left-3 top-3.5 pointer-events-none" />
                     <input
                       type="time"
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
-                      className="w-full max-w-full min-w-0 box-border pl-9 pr-3 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px]"
+                      className="w-full box-border block pl-9 pr-3 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px]"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1.5 min-w-0 max-w-full">
+                <div className="space-y-1.5 w-full box-border">
                   <label className="text-xs font-mono uppercase text-brand-muted">End Time</label>
-                  <div className="relative min-w-0 max-w-full">
+                  <div className="relative w-full box-border">
                     <Clock className="w-4 h-4 text-zinc-500 absolute left-3 top-3.5 pointer-events-none" />
                     <input
                       type="time"
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
-                      className="w-full max-w-full min-w-0 box-border pl-9 pr-3 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px]"
+                      className="w-full box-border block pl-9 pr-3 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px]"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Location or online details */}
-              <div className="space-y-1.5 min-w-0 max-w-full">
+              <div className="space-y-1.5 w-[90%] sm:w-full mx-auto box-border">
                 <label className="text-xs font-mono uppercase text-brand-muted">
                   {format === 'online' ? 'Meeting Link or Video Note (Optional)' : 'Physical Location / Address'}
                 </label>
@@ -423,18 +423,18 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
                   placeholder={format === 'online' ? 'e.g., Secure video room link' : 'e.g., Main Athletic Track, Court 4'}
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full max-w-full min-w-0 box-border px-3.5 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-brand-accent transition min-h-[44px]"
+                  className="w-full box-border block px-3.5 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-brand-accent transition min-h-[44px]"
                 />
               </div>
 
               {error && (
-                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center space-x-2 text-xs text-rose-300 min-w-0 max-w-full box-border">
+                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center space-x-2 text-xs text-rose-300 w-[90%] sm:w-full mx-auto box-border">
                   <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
                   <span className="break-words">{error}</span>
                 </div>
               )}
 
-              <div className="flex items-center space-x-3 pt-2 min-w-0 max-w-full">
+              <div className="flex items-center space-x-3 pt-2 w-[90%] sm:w-full mx-auto box-border">
                 <button
                   type="button"
                   onClick={() => setMode('list')}

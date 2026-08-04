@@ -19,7 +19,6 @@ export const Navbar: React.FC = () => {
 
   const navItems: { id: ActiveTab; label: string }[] = isCoach
     ? [
-        { id: 'home', label: 'Home' },
         { id: 'coach-dashboard', label: 'Dashboard' },
         { id: 'coach-profile', label: 'My Profile' },
         { id: 'coach-listings', label: 'My Listings' },
