@@ -24,7 +24,25 @@
     -webkit-text-size-adjust: 100%;
   }
 
-  button, a { -webkit-tap-highlight-color: transparent; }
+  button, a, input, select, textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Prevent automatic iOS zoom on focus for form elements */
+  @media (max-width: 768px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
+}
+
+/* Touch-friendly touch targets */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Custom scrollbar for high-tech aesthetic */

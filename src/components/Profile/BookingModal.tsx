@@ -98,6 +98,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setSuccess(booking);
       setActiveMeetingBooking(booking);
       onBookingCreated?.(booking);
+
+      // Real-time update: remove booked slot from local state immediately
+      setSlots((prev) => prev.filter((s) => s.id !== selectedSlot.id));
+      setSelectedSlotId(null);
+
       const reminderBase = {
         bookingId: booking.id,
         title: `Consultation with ${coach.name}`,

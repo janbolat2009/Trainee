@@ -6,9 +6,10 @@ import { MOCK_COACH_QA, MOCK_REVIEWS } from '../../data/mockData';
 import { QASection } from './QASection';
 import { BookingModal } from './BookingModal';
 import { EditProfileModal } from './EditProfileModal';
+import { AvailabilityManagerModal } from './AvailabilityManagerModal';
 import {
   ShieldCheck, Star, MapPin, Award, CheckCircle2, ArrowLeft, Bookmark, Calendar,
-  Phone, Mail, MessageSquare, Edit3, Globe, Briefcase, GraduationCap, Users, Twitter, Instagram, Linkedin
+  Phone, Mail, MessageSquare, Edit3, Globe, Briefcase, GraduationCap, Users, Twitter, Instagram, Linkedin, Clock
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -22,6 +23,7 @@ export const CoachProfileView: React.FC = () => {
   const [selectedTier, setSelectedTier] = useState<number>(1);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [isAvailabilityManagerOpen, setIsAvailabilityManagerOpen] = useState(false);
 
   // Use the authenticated coach's profile if a coach is viewing their own profile, else selectedCoach
   const isCoachRole = currentProfile?.role === 'coach';
@@ -130,18 +132,28 @@ export const CoachProfileView: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-3">
             {isCoachRole && (
-              <button
-                onClick={() => setIsEditProfileOpen(true)}
-                className="flex items-center space-x-2 rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-xs font-semibold text-white transition hover:bg-white/20"
-              >
-                <Edit3 className="w-4 h-4" />
-                <span>Edit Profile</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setIsAvailabilityManagerOpen(true)}
+                  className="flex items-center space-x-2 rounded-xl border border-brand-accent/40 bg-brand-accent/15 px-5 py-3 text-xs font-bold text-brand-accent transition hover:bg-brand-accent/30 shadow-glow-accent min-h-[44px]"
+                >
+                  <Clock className="w-4 h-4 text-brand-accent" />
+                  <span>Manage Availability</span>
+                </button>
+
+                <button
+                  onClick={() => setIsEditProfileOpen(true)}
+                  className="flex items-center space-x-2 rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-xs font-semibold text-white transition hover:bg-white/20 min-h-[44px]"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  <span>Edit Profile</span>
+                </button>
+              </>
             )}
 
             <button
               onClick={() => toggleSaveCoach(coach.id)}
-              className={`p-3 rounded-xl border transition ${
+              className={`p-3 rounded-xl border transition min-h-[44px] min-w-[44px] flex items-center justify-center ${
                 isSaved
                   ? 'bg-brand-accent/20 border-brand-accent text-brand-accent'
                   : 'bg-brand-card border-brand-border text-brand-muted hover:text-white'
@@ -152,7 +164,7 @@ export const CoachProfileView: React.FC = () => {
 
             <button
               onClick={() => void handleBooking()}
-              className="flex items-center space-x-2 rounded-xl bg-white px-5 py-3 text-xs font-semibold text-black transition hover:bg-zinc-200 shadow-glow-white"
+              className="flex items-center space-x-2 rounded-xl bg-white px-5 py-3 text-xs font-semibold text-black transition hover:bg-zinc-200 shadow-glow-white min-h-[44px]"
             >
               <Calendar className="w-4 h-4" />
               <span>Book Consultation</span>
@@ -525,6 +537,11 @@ export const CoachProfileView: React.FC = () => {
         onBookingCreated={() => setIsBookingModalOpen(false)}
       />
       <EditProfileModal isOpen={isEditProfileOpen} onClose={() => setIsEditProfileOpen(false)} />
+      <AvailabilityManagerModal
+        isOpen={isAvailabilityManagerOpen}
+        onClose={() => setIsAvailabilityManagerOpen(false)}
+        coach={coach}
+      />
     </div>
   );
 };

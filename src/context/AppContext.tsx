@@ -64,7 +64,7 @@ interface AppContextType {
   isLoginOpen: boolean;
   setIsLoginOpen: (open: boolean) => void;
   currentUser: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   notifications: AppNotification[];
   addNotification: (n: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => void;
@@ -381,20 +381,20 @@ useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    if (!supabase) return false;
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    if (!supabase) return { success: false, error: 'Supabase client is not initialized.' };
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error || !data.user) {
       console.error('Login failed:', error?.message ?? 'User was not returned.');
-      return false;
+      return { success: false, error: error?.message ?? 'Invalid email or password' };
     }
 
     setCurrentUser(data.user);
     setIsAuthenticated(true);
     const profileLoaded = await refreshAuthenticatedProfile(data.user);
     if (profileLoaded) setIsLoginOpen(false);
-    return profileLoaded;
+    return { success: profileLoaded, error: profileLoaded ? undefined : 'Failed to load user profile.' };
   };
 
   const logout = async (): Promise<void> => {
