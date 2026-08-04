@@ -333,8 +333,8 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
 
           {/* Mode: Add / Edit Form */}
           {(mode === 'add' || mode === 'edit') && (
-            <form onSubmit={handleSaveSlot} className="space-y-4 w-full box-border flex flex-col items-center">
-              <div className="flex items-center justify-between pb-2 border-b border-white/10 w-[90%] sm:w-full mx-auto box-border">
+            <form onSubmit={handleSaveSlot} className="space-y-4 w-full box-border">
+              <div className="flex items-center justify-between pb-2 border-b border-white/10 w-full box-border">
                 <h3 className="text-base font-bold text-white break-words">
                   {mode === 'add' ? 'Add New Time Slot' : 'Edit Time Slot'}
                 </h3>
@@ -348,7 +348,7 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
               </div>
 
               {/* Format selection */}
-              <div className="space-y-1.5 w-[90%] sm:w-full mx-auto box-border">
+              <div className="space-y-1.5 w-full box-border">
                 <label className="text-xs font-mono uppercase text-brand-muted">Session Format</label>
                 <div className="grid grid-cols-2 gap-2.5 sm:gap-3 w-full box-border">
                   {(['online', 'offline'] as ConsultationFormat[]).map((fmt) => (
@@ -356,7 +356,7 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
                       key={fmt}
                       type="button"
                       onClick={() => setFormat(fmt)}
-                      className={`p-3 sm:p-3.5 rounded-2xl border text-left transition flex items-center justify-between min-h-[44px] w-full box-border ${
+                      className={`p-3 sm:p-3.5 rounded-2xl border text-left transition flex items-center justify-between min-h-[44px] w-full min-w-0 box-border ${
                         format === fmt
                           ? 'bg-brand-accent/10 border-brand-accent text-white'
                           : 'bg-brand-dark/50 border-white/10 text-brand-muted hover:border-white/20'
@@ -372,49 +372,59 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
                 </div>
               </div>
 
-              {/* Date & Time fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4 w-[80%] sm:w-full mx-auto box-border">
-                <div className="space-y-1.5 w-full box-border">
+              {/*
+                Date & Time fields
+                FIX: removed the artificial "w-[80%] mx-auto" wrapper that was
+                shrinking the available width on mobile. Native date/time inputs
+                (especially on iOS Safari) have their own minimum rendering width
+                and don't shrink below it — so squeezing the container made them
+                overflow. Now each field gets the FULL width of the form, grid
+                gaps are tighter on mobile, and "min-w-0" is added everywhere in
+                the flex/grid chain so children are actually allowed to shrink
+                instead of overflowing their parent.
+              */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full min-w-0 box-border">
+                <div className="space-y-1.5 w-full min-w-0 box-border">
                   <label className="text-xs font-mono uppercase text-brand-muted">Date</label>
-                  <div className="relative w-full box-border">
+                  <div className="relative w-full min-w-0 box-border">
                     <input
                       type="date"
                       value={slotDate}
                       onChange={(e) => setSlotDate(e.target.value)}
-                      className="w-full box-border block px-3 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px]"
+                      className="w-full min-w-0 max-w-full block px-3 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px] appearance-none"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1.5 w-full box-border">
+                <div className="space-y-1.5 w-full min-w-0 box-border">
                   <label className="text-xs font-mono uppercase text-brand-muted">Start Time</label>
-                  <div className="relative w-full box-border">
+                  <div className="relative w-full min-w-0 box-border">
                     <Clock className="w-4 h-4 text-zinc-500 absolute left-3 top-3.5 pointer-events-none" />
                     <input
                       type="time"
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
-                      className="w-full box-border block pl-9 pr-3 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px]"
+                      className="w-full min-w-0 max-w-full block pl-9 pr-2 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px] appearance-none"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1.5 w-full box-border">
+                <div className="space-y-1.5 w-full min-w-0 box-border">
                   <label className="text-xs font-mono uppercase text-brand-muted">End Time</label>
-                  <div className="relative w-full box-border">
+                  <div className="relative w-full min-w-0 box-border">
                     <Clock className="w-4 h-4 text-zinc-500 absolute left-3 top-3.5 pointer-events-none" />
                     <input
                       type="time"
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
-                      className="w-full box-border block pl-9 pr-3 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px]"
+                      className="w-full min-w-0 max-w-full block pl-9 pr-2 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px] appearance-none"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Location or online details */}
-              <div className="space-y-1.5 w-[90%] sm:w-full mx-auto box-border">
+              <div className="space-y-1.5 w-full min-w-0 box-border">
                 <label className="text-xs font-mono uppercase text-brand-muted">
                   {format === 'online' ? 'Meeting Link or Video Note (Optional)' : 'Physical Location / Address'}
                 </label>
@@ -423,18 +433,18 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
                   placeholder={format === 'online' ? 'e.g., Secure video room link' : 'e.g., Main Athletic Track, Court 4'}
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full box-border block px-3.5 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-brand-accent transition min-h-[44px]"
+                  className="w-full min-w-0 max-w-full block px-3.5 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-brand-accent transition min-h-[44px]"
                 />
               </div>
 
               {error && (
-                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center space-x-2 text-xs text-rose-300 w-[90%] sm:w-full mx-auto box-border">
+                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center space-x-2 text-xs text-rose-300 w-full min-w-0 box-border">
                   <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
                   <span className="break-words">{error}</span>
                 </div>
               )}
 
-              <div className="flex items-center space-x-3 pt-2 w-[90%] sm:w-full mx-auto box-border">
+              <div className="flex items-center space-x-3 pt-2 w-full min-w-0 box-border">
                 <button
                   type="button"
                   onClick={() => setMode('list')}
