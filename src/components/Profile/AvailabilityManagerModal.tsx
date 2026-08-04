@@ -444,18 +444,27 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
                 </div>
               )}
 
-              <div className="flex items-center space-x-3 pt-2 w-full min-w-0 box-border">
+              {/*
+                FIX: was "space-x-3" + fixed "w-1/3"/"w-2/3" — those two widths
+                already sum to 100%, and space-x-3 then adds extra margin on
+                top of that 100%, pushing the second button past the edge.
+                Using "gap-3" + flex-grow ratios (flex-1 / flex-[2]) instead
+                means the gap is subtracted from the available width first,
+                then the remainder is split proportionally — so it can never
+                overflow the container.
+              */}
+              <div className="flex items-center gap-3 pt-2 w-full min-w-0 box-border">
                 <button
                   type="button"
                   onClick={() => setMode('list')}
-                  className="w-1/3 py-3.5 rounded-xl border border-white/10 bg-white/5 text-xs font-bold text-white hover:bg-white/10 transition min-h-[44px] shrink-0"
+                  className="flex-1 min-w-0 py-3.5 rounded-xl border border-white/10 bg-white/5 text-xs font-bold text-white hover:bg-white/10 transition min-h-[44px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="w-2/3 py-3.5 rounded-xl bg-white text-black font-extrabold text-xs uppercase tracking-wider hover:bg-zinc-200 transition shadow-glow-white disabled:opacity-50 min-h-[44px] shrink-0"
+                  className="flex-[2] min-w-0 py-3.5 rounded-xl bg-white text-black font-extrabold text-xs uppercase tracking-wider hover:bg-zinc-200 transition shadow-glow-white disabled:opacity-50 min-h-[44px]"
                 >
                   {isSaving ? 'Saving Slot...' : (mode === 'add' ? 'Save Available Slot' : 'Update Slot')}
                 </button>
