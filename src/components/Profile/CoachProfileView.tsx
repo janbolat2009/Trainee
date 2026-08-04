@@ -213,19 +213,19 @@ export const CoachProfileView: React.FC = () => {
         </div>
 
         {/* Main Details Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-7 space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 min-w-0 max-w-full">
+          <div className="lg:col-span-7 space-y-8 min-w-0 max-w-full">
             {/* Biography & Philosophy */}
             <motion.div
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: 0.05 }}
-              className="glass-panel p-6 sm:p-8 rounded-3xl border border-brand-border space-y-4"
+              className="glass-panel p-6 sm:p-8 rounded-3xl border border-brand-border space-y-4 min-w-0 max-w-full overflow-hidden"
             >
-              <h2 className="text-lg font-extrabold text-white uppercase tracking-tight">
+              <h2 className="text-lg font-extrabold text-white uppercase tracking-tight break-words">
                 Coaching Philosophy & Background
               </h2>
-              <p className="text-sm text-zinc-300 leading-relaxed">
+              <p className="text-sm text-zinc-300 leading-relaxed break-words whitespace-pre-wrap min-w-0 max-w-full">
                 {coach.bio || 'No biography provided yet.'}
               </p>
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Bell, Clock } from 'lucide-react';
 import type { ConsultationBooking } from '../../types';
+import { formatFullDateTimeInUserTimezone } from '../../lib/dateUtils';
 
 interface ReminderModalProps {
   isOpen: boolean;
@@ -37,7 +38,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({ isOpen, onClose, b
             </div>
             <div>
               <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">Consultation</p>
-              <p className="mt-2 text-sm text-zinc-300">{new Date(booking.startsAt).toLocaleString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+              <p className="mt-2 text-sm text-zinc-300">{formatFullDateTimeInUserTimezone(booking.startsAt)}</p>
               <p className="text-xs text-zinc-500 mt-2">{booking.format === 'online' ? 'Online session' : 'In-person meeting'}</p>
             </div>
           </div>

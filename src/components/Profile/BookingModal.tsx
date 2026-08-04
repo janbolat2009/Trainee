@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { X, Calendar, Clock3, MapPin, Laptop, CheckCircle2, AlertTriangle, Video } from 'lucide-react';
-import type { Athlete, Coach, ConsultationSlot, ConsultationBooking, ConsultationFormat } from '../../types';
+import type { Athlete, Coach, ConsultationSlot, ConsultationFormat, ConsultationBooking } from '../../types';
 import { fetchCoachAvailabilitySlots, bookConsultation } from '../../services/bookingService';
+import { formatFullDateTimeInUserTimezone, formatTimeRangeInUserTimezone, getUserTimezoneOffset } from '../../lib/dateUtils';
 import { useApp } from '../../context/AppContext';
 
 interface BookingModalProps {
@@ -11,17 +12,6 @@ interface BookingModalProps {
   athleteProfile: Athlete | null;
   onBookingCreated?: (booking: ConsultationBooking) => void;
 }
-
-const formatDate = (iso: string) => {
-  const date = new Date(iso);
-  return date.toLocaleString('en-GB', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
 
 export const BookingModal: React.FC<BookingModalProps> = ({
   isOpen,
@@ -106,7 +96,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       const reminderBase = {
         bookingId: booking.id,
         title: `Consultation with ${coach.name}`,
-        message: `Your session starts at ${formatDate(booking.startsAt)}.`,
+        message: `Your session starts at ${formatFullDateTimeInUserTimezone(booking.startsAt)}.`,
         scheduledFor: booking.startsAt,
         status: 'scheduled' as const,
         isUnread: true,
@@ -116,7 +106,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       addNotification({
         type: 'success',
         title: 'Consultation Requested',
-        message: `Your booking request for ${formatDate(booking.startsAt)} has been sent to ${coach.name}.`,
+        message: `Your booking request for ${formatFullDateTimeInUserTimezone(booking.startsAt)} has been sent to ${coach.name}.`,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create booking.');
@@ -194,7 +184,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             <div className="rounded-3xl border border-white/10 bg-brand-dark p-5">
               <div className="flex items-center justify-between gap-3 mb-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">Available slots</p>
+                  <p className="text-xs uppercase tracking-[0.28em] text-brand-muted">Available slots ({getUserTimezoneOffset()})</p>
                   <h3 className="mt-2 text-lg font-semibold text-white">Select a time</h3>
                 </div>
                 <span className="text-[11px] text-brand-muted">{selectedFormat.toUpperCase()}</span>
@@ -212,27 +202,32 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {availableSlots.map((slot) => (
-                    <button
-                      key={slot.id}
-                      type="button"
-                      onClick={() => setSelectedSlotId(slot.id)}
-                      className={`w-full rounded-3xl border p-4 text-left transition ${
-                        selectedSlotId === slot.id
-                          ? 'border-brand-accent bg-brand-accent/10 text-white'
-                          : 'border-white/10 bg-[#111318] text-brand-muted hover:border-white/20'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
-                          <p className="text-sm font-semibold text-white">{formatDate(slot.startsAt)}</p>
-                          <p className="text-[11px] text-zinc-400 mt-1">Ends {new Date(slot.endsAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</p>
+                  {availableSlots.map((slot) => {
+                    const { formattedDate, formattedStart, formattedEnd, tzLabel } = formatTimeRangeInUserTimezone(slot.startsAt, slot.endsAt);
+                    return (
+                      <button
+                        key={slot.id}
+                        type="button"
+                        onClick={() => setSelectedSlotId(slot.id)}
+                        className={`w-full rounded-3xl border p-4 text-left transition ${
+                          selectedSlotId === slot.id
+                            ? 'border-brand-accent bg-brand-accent/10 text-white'
+                            : 'border-white/10 bg-[#111318] text-brand-muted hover:border-white/20'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="text-sm font-semibold text-white">{formattedDate}</p>
+                            <p className="text-[11px] text-zinc-400 mt-1">
+                              {formattedStart} – {formattedEnd} <span className="text-brand-accent font-mono">({tzLabel})</span>
+                            </p>
+                          </div>
+                          <div className="text-[11px] uppercase tracking-[0.24em] text-brand-muted">{slot.format}</div>
                         </div>
-                        <div className="text-[11px] uppercase tracking-[0.24em] text-brand-muted">{slot.format}</div>
-                      </div>
-                      <p className="mt-3 text-[11px] text-zinc-400">{slot.location}</p>
-                    </button>
-                  ))}
+                        <p className="mt-3 text-[11px] text-zinc-400">{slot.location}</p>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

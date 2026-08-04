@@ -34,6 +34,18 @@
       font-size: 16px !important;
     }
   }
+
+  /* Global text wrapping & mobile overflow prevention */
+  p, h1, h2, h3, h4, h5, h6, span, div, label, input, select, textarea, button {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  /* Ensure containers do not force horizontal scroll on mobile */
+  img, video, canvas, svg {
+    max-width: 100%;
+    height: auto;
+  }
 }
 
 /* Touch-friendly touch targets */

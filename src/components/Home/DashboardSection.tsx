@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import type { DashboardSession, ConsultationBooking, AthleteProgressLog } from '../../types';
 import { fetchAthleteBookings, fetchCoachBookings } from '../../services/bookingService';
 import { fetchStudentLogs } from '../../services/progressService';
+import { formatTimeRangeInUserTimezone, getUserTimezoneOffset } from '../../lib/dateUtils';
 import {
   Calendar,
   Clock,
@@ -73,20 +74,24 @@ export const DashboardSection: React.FC = () => {
     setTimeout(() => setCompletedNotice(null), 2800);
   };
 
-  const sessions: DashboardSession[] = bookings.map((b) => ({
-    id: b.id,
-    title: `${b.format === 'online' ? 'Online' : 'In-Person'} Consultation`,
-    date: new Date(b.startsAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
-    time: new Date(b.startsAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-    coachName: b.coachName || 'Coach',
-    coachAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(b.coachName || b.coachId)}`,
-    sport: 'Sports Performance',
-    duration: '45 min',
-    status: b.status === 'confirmed' ? 'Upcoming' : b.status === 'pending' ? 'In Progress' : 'Completed',
-    improvementMetric: 'Consultation',
-    improvementDelta: b.status.toUpperCase(),
-    focusArea: b.location || 'Video Call Link',
-  }));
+  const sessions: (DashboardSession & { tzLabel?: string })[] = bookings.map((b) => {
+    const { formattedDate, formattedStart, formattedEnd, tzLabel } = formatTimeRangeInUserTimezone(b.startsAt, b.endsAt);
+    return {
+      id: b.id,
+      title: `${b.format === 'online' ? 'Online' : 'In-Person'} Consultation`,
+      date: formattedDate,
+      time: `${formattedStart} - ${formattedEnd} (${tzLabel})`,
+      coachName: b.coachName || 'Coach',
+      coachAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(b.coachName || b.coachId)}`,
+      sport: 'Sports Performance',
+      duration: '45 min',
+      status: b.status === 'confirmed' ? 'Upcoming' : b.status === 'pending' ? 'In Progress' : 'Completed',
+      improvementMetric: 'Consultation',
+      improvementDelta: b.status.toUpperCase(),
+      focusArea: b.location || 'Video Call Link',
+      tzLabel,
+    };
+  });
 
   const activeSessionsCount = sessions.filter((s) => s.status !== 'Completed').length;
   const completedHours = (sessions.filter((s) => s.status === 'Completed').length * 0.75).toFixed(1);

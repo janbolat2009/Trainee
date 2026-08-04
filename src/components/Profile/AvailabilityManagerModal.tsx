@@ -8,6 +8,7 @@ import {
   updateCoachSlot,
   deleteCoachSlot,
 } from '../../services/bookingService';
+import { formatTimeRangeInUserTimezone, getUserTimezoneOffset } from '../../lib/dateUtils';
 import { useApp } from '../../context/AppContext';
 
 interface AvailabilityManagerModalProps {
@@ -181,31 +182,31 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto overscroll-contain">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto overscroll-contain">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          className="relative w-full max-w-2xl bg-[#11141a] border border-white/10 rounded-[32px] p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto"
+          className="relative w-full max-w-2xl bg-[#11141a] border border-white/10 rounded-[24px] sm:rounded-[32px] p-4 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto overflow-x-hidden min-w-0 max-w-full box-border"
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
-            <div>
+          <div className="flex items-center justify-between border-b border-white/10 pb-4 min-w-0 max-w-full">
+            <div className="min-w-0 max-w-full">
               <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-brand-accent/10 border border-brand-accent/30 text-brand-accent text-xs font-mono font-bold uppercase mb-1">
                 <Calendar className="w-3.5 h-3.5" />
-                <span>Trainer Dashboard</span>
+                <span>Trainer Dashboard ({getUserTimezoneOffset()})</span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight break-words">
                 Manage Your Availability
               </h2>
-              <p className="text-xs text-brand-muted">
+              <p className="text-xs text-brand-muted break-words">
                 Add, edit, or remove online & offline time slots for athletes to book.
               </p>
             </div>
 
             <button
               onClick={onClose}
-              className="p-2 rounded-2xl text-brand-muted hover:text-white hover:bg-white/10 transition"
+              className="p-2 rounded-2xl text-brand-muted hover:text-white hover:bg-white/10 transition shrink-0 ml-2"
             >
               <X className="w-5 h-5" />
             </button>
@@ -213,16 +214,16 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
 
           {/* Mode: List View */}
           {mode === 'list' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="text-xs font-mono uppercase text-brand-muted tracking-wider">
+            <div className="space-y-4 min-w-0 max-w-full">
+              <div className="flex items-center justify-between gap-2 min-w-0 max-w-full">
+                <div className="text-xs font-mono uppercase text-brand-muted tracking-wider truncate">
                   Configured Time Slots ({slots.length})
                 </div>
 
                 <button
                   type="button"
                   onClick={handleOpenAdd}
-                  className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-brand-accent text-black font-extrabold text-xs uppercase tracking-wider hover:bg-brand-accentHover transition shadow-glow-accent min-h-[44px]"
+                  className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-brand-accent text-black font-extrabold text-xs uppercase tracking-wider hover:bg-brand-accentHover transition shadow-glow-accent min-h-[44px] shrink-0"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Add Time Slot</span>
@@ -236,10 +237,10 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
                   ))}
                 </div>
               ) : slots.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-white/10 p-8 text-center space-y-3">
+                <div className="rounded-3xl border border-dashed border-white/10 p-6 sm:p-8 text-center space-y-3 min-w-0 max-w-full">
                   <Calendar className="w-10 h-10 text-brand-muted mx-auto" />
-                  <p className="text-sm text-zinc-300 font-medium">No time slots configured yet.</p>
-                  <p className="text-xs text-brand-muted max-w-sm mx-auto">
+                  <p className="text-sm text-zinc-300 font-medium break-words">No time slots configured yet.</p>
+                  <p className="text-xs text-brand-muted max-w-sm mx-auto break-words">
                     Add your available dates and time slots so athletes can request 1-on-1 sessions.
                   </p>
                   <button
@@ -252,33 +253,24 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
                   </button>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
+                <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1 min-w-0 max-w-full">
                   {slots.map((slot) => {
-                    const start = new Date(slot.startsAt);
-                    const end = new Date(slot.endsAt);
-                    const formattedDate = start.toLocaleDateString('en-GB', {
-                      weekday: 'short',
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    });
-                    const formattedStart = start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-                    const formattedEnd = end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                    const { formattedDate, formattedStart, formattedEnd, tzLabel } = formatTimeRangeInUserTimezone(slot.startsAt, slot.endsAt);
 
                     return (
                       <div
                         key={slot.id}
-                        className={`p-4 rounded-2xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                        className={`p-3.5 sm:p-4 rounded-2xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0 max-w-full box-border ${
                           slot.isActive
                             ? 'bg-brand-card/90 border-white/10'
                             : 'bg-white/[0.02] border-white/5 opacity-60'
                         }`}
                       >
-                        <div className="space-y-1.5">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-bold text-white text-sm">{formattedDate}</span>
+                        <div className="space-y-1.5 min-w-0 max-w-full">
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                            <span className="font-bold text-white text-xs sm:text-sm">{formattedDate}</span>
                             <span className="px-2 py-0.5 rounded-md bg-white/10 text-zinc-300 text-xs font-mono">
-                              {formattedStart} - {formattedEnd}
+                              {formattedStart} - {formattedEnd} ({tzLabel})
                             </span>
                             <span
                               className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border ${
@@ -341,88 +333,88 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
 
           {/* Mode: Add / Edit Form */}
           {(mode === 'add' || mode === 'edit') && (
-            <form onSubmit={handleSaveSlot} className="space-y-5">
-              <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                <h3 className="text-base font-bold text-white">
+            <form onSubmit={handleSaveSlot} className="space-y-4 sm:space-y-5 min-w-0 max-w-full box-border">
+              <div className="flex items-center justify-between pb-2 border-b border-white/10 min-w-0 max-w-full">
+                <h3 className="text-base font-bold text-white break-words">
                   {mode === 'add' ? 'Add New Time Slot' : 'Edit Time Slot'}
                 </h3>
                 <button
                   type="button"
                   onClick={() => setMode('list')}
-                  className="text-xs text-brand-muted hover:text-white transition"
+                  className="text-xs text-brand-muted hover:text-white transition shrink-0 ml-2"
                 >
                   Cancel
                 </button>
               </div>
 
               {/* Format selection */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-w-0 max-w-full">
                 <label className="text-xs font-mono uppercase text-brand-muted">Session Format</label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-3 min-w-0 max-w-full">
                   {(['online', 'offline'] as ConsultationFormat[]).map((fmt) => (
                     <button
                       key={fmt}
                       type="button"
                       onClick={() => setFormat(fmt)}
-                      className={`p-3.5 rounded-2xl border text-left transition flex items-center justify-between min-h-[44px] ${
+                      className={`p-3 sm:p-3.5 rounded-2xl border text-left transition flex items-center justify-between min-h-[44px] min-w-0 max-w-full ${
                         format === fmt
                           ? 'bg-brand-accent/10 border-brand-accent text-white'
                           : 'bg-brand-dark/50 border-white/10 text-brand-muted hover:border-white/20'
                       }`}
                     >
-                      <div className="flex items-center space-x-2.5">
-                        {fmt === 'online' ? <Laptop className="w-4 h-4 text-sky-400" /> : <MapPin className="w-4 h-4 text-amber-400" />}
-                        <span className="font-bold text-xs capitalize text-white">{fmt} Session</span>
+                      <div className="flex items-center space-x-2 min-w-0">
+                        {fmt === 'online' ? <Laptop className="w-4 h-4 text-sky-400 shrink-0" /> : <MapPin className="w-4 h-4 text-amber-400 shrink-0" />}
+                        <span className="font-bold text-xs capitalize text-white truncate">{fmt}</span>
                       </div>
-                      {format === fmt && <CheckCircle2 className="w-4 h-4 text-brand-accent" />}
+                      {format === fmt && <CheckCircle2 className="w-4 h-4 text-brand-accent shrink-0" />}
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Date & Time fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 min-w-0 max-w-full">
+                <div className="space-y-1.5 min-w-0 max-w-full">
                   <label className="text-xs font-mono uppercase text-brand-muted">Date</label>
-                  <div className="relative">
+                  <div className="relative min-w-0 max-w-full">
                     <input
                       type="date"
                       value={slotDate}
                       onChange={(e) => setSlotDate(e.target.value)}
-                      className="w-full px-3.5 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px]"
+                      className="w-full max-w-full min-w-0 box-border px-3 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px]"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0 max-w-full">
                   <label className="text-xs font-mono uppercase text-brand-muted">Start Time</label>
-                  <div className="relative">
-                    <Clock className="w-4 h-4 text-zinc-500 absolute left-3 top-3.5" />
+                  <div className="relative min-w-0 max-w-full">
+                    <Clock className="w-4 h-4 text-zinc-500 absolute left-3 top-3.5 pointer-events-none" />
                     <input
                       type="time"
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
-                      className="w-full pl-9 pr-3 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px]"
+                      className="w-full max-w-full min-w-0 box-border pl-9 pr-3 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px]"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0 max-w-full">
                   <label className="text-xs font-mono uppercase text-brand-muted">End Time</label>
-                  <div className="relative">
-                    <Clock className="w-4 h-4 text-zinc-500 absolute left-3 top-3.5" />
+                  <div className="relative min-w-0 max-w-full">
+                    <Clock className="w-4 h-4 text-zinc-500 absolute left-3 top-3.5 pointer-events-none" />
                     <input
                       type="time"
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
-                      className="w-full pl-9 pr-3 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px]"
+                      className="w-full max-w-full min-w-0 box-border pl-9 pr-3 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs focus:outline-none focus:border-brand-accent transition min-h-[44px]"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Location or online details */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-w-0 max-w-full">
                 <label className="text-xs font-mono uppercase text-brand-muted">
                   {format === 'online' ? 'Meeting Link or Video Note (Optional)' : 'Physical Location / Address'}
                 </label>
@@ -431,29 +423,29 @@ export const AvailabilityManagerModal: React.FC<AvailabilityManagerModalProps> =
                   placeholder={format === 'online' ? 'e.g., Secure video room link' : 'e.g., Main Athletic Track, Court 4'}
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-brand-accent transition min-h-[44px]"
+                  className="w-full max-w-full min-w-0 box-border px-3.5 py-3 rounded-xl bg-brand-dark border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-brand-accent transition min-h-[44px]"
                 />
               </div>
 
               {error && (
-                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center space-x-2 text-xs text-rose-300">
+                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center space-x-2 text-xs text-rose-300 min-w-0 max-w-full box-border">
                   <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-                  <span>{error}</span>
+                  <span className="break-words">{error}</span>
                 </div>
               )}
 
-              <div className="flex items-center space-x-3 pt-2">
+              <div className="flex items-center space-x-3 pt-2 min-w-0 max-w-full">
                 <button
                   type="button"
                   onClick={() => setMode('list')}
-                  className="w-1/3 py-3.5 rounded-xl border border-white/10 bg-white/5 text-xs font-bold text-white hover:bg-white/10 transition min-h-[44px]"
+                  className="w-1/3 py-3.5 rounded-xl border border-white/10 bg-white/5 text-xs font-bold text-white hover:bg-white/10 transition min-h-[44px] shrink-0"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="w-2/3 py-3.5 rounded-xl bg-white text-black font-extrabold text-xs uppercase tracking-wider hover:bg-zinc-200 transition shadow-glow-white disabled:opacity-50 min-h-[44px]"
+                  className="w-2/3 py-3.5 rounded-xl bg-white text-black font-extrabold text-xs uppercase tracking-wider hover:bg-zinc-200 transition shadow-glow-white disabled:opacity-50 min-h-[44px] shrink-0"
                 >
                   {isSaving ? 'Saving Slot...' : (mode === 'add' ? 'Save Available Slot' : 'Update Slot')}
                 </button>
