@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { QASection } from './QASection';
 import { MOCK_ATHLETE_QA } from '../../data/mockData';
-import { Trophy, Target, Activity, MapPin, Sparkles, Edit3, User, LogIn, ShieldCheck } from 'lucide-react';
+import { Trophy, Target, Activity, MapPin, Sparkles, Edit3, User, LogIn, ShieldCheck, CreditCard } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { WellbeingModal } from '../Support/WellbeingModal';
 import { fetchAthleteBookings } from '../../services/bookingService';
@@ -11,7 +11,11 @@ import { VideoMeetingModal } from '../Meetings/VideoMeetingModal';
 import { EditProfileModal } from './EditProfileModal';
 
 export const AthleteProfileView: React.FC = () => {
-  const { selectedAthlete, setActiveTab, setIsOnboardingOpen, setIsLoginOpen, isAuthenticated, currentProfile, addNotification, activeMeetingBooking, setActiveMeetingBooking } = useApp();
+  const {
+    selectedAthlete, setActiveTab, setIsOnboardingOpen, setIsLoginOpen,
+    isAuthenticated, currentProfile, addNotification, activeMeetingBooking,
+    setActiveMeetingBooking, subscription, openPricingModal,
+  } = useApp();
   const [isWellbeingOpen, setIsWellbeingOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [bookings, setBookings] = useState<ConsultationBooking[]>([]);
@@ -113,6 +117,18 @@ export const AthleteProfileView: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => openPricingModal('general')}
+              className={`flex items-center space-x-1.5 rounded-xl border px-4 py-2.5 text-xs font-bold transition ${
+                subscription.tier === 'pro'
+                  ? 'border-brand-accent/40 bg-brand-accent/15 text-brand-accent shadow-glow-accent'
+                  : 'border-white/10 bg-white/[0.05] text-zinc-300 hover:text-white hover:bg-white/[0.1]'
+              }`}
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>{subscription.tier === 'pro' ? 'Athlete Pro' : 'Free Tier (Upgrade)'}</span>
+            </button>
+
             <button
               onClick={() => setIsEditProfileOpen(true)}
               className="flex items-center space-x-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-xs font-medium text-white transition hover:bg-white/[0.1]"

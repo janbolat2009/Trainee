@@ -9,7 +9,7 @@ import { EditProfileModal } from './EditProfileModal';
 import { AvailabilityManagerModal } from './AvailabilityManagerModal';
 import {
   ShieldCheck, Star, MapPin, Award, CheckCircle2, ArrowLeft, Bookmark, Calendar,
-  Phone, Mail, MessageSquare, Edit3, Globe, Briefcase, GraduationCap, Users, Twitter, Instagram, Linkedin, Clock
+  Phone, Mail, MessageSquare, Edit3, Globe, Briefcase, GraduationCap, Users, Twitter, Instagram, Linkedin, Clock, CreditCard
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -17,6 +17,7 @@ export const CoachProfileView: React.FC = () => {
   const {
     selectedCoach, setActiveTab, savedCoachIds, toggleSaveCoach,
     isAuthenticated, currentProfile, setIsLoginOpen, activeTab,
+    subscription, openPricingModal,
   } = useApp();
 
   const [isVerificationOpen, setIsVerificationOpen] = useState(false);
@@ -134,10 +135,18 @@ export const CoachProfileView: React.FC = () => {
             {isCoachRole && (
               <>
                 <button
-                  onClick={() => setIsAvailabilityManagerOpen(true)}
+                  onClick={() => openPricingModal('general')}
                   className="flex items-center space-x-2 rounded-xl border border-brand-accent/40 bg-brand-accent/15 px-5 py-3 text-xs font-bold text-brand-accent transition hover:bg-brand-accent/30 shadow-glow-accent min-h-[44px]"
                 >
-                  <Clock className="w-4 h-4 text-brand-accent" />
+                  <CreditCard className="w-4 h-4 text-brand-accent" />
+                  <span>Plan: {subscription.tier.replace('_', ' ').toUpperCase()}</span>
+                </button>
+
+                <button
+                  onClick={() => setIsAvailabilityManagerOpen(true)}
+                  className="flex items-center space-x-2 rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-xs font-semibold text-white transition hover:bg-white/20 min-h-[44px]"
+                >
+                  <Clock className="w-4 h-4" />
                   <span>Manage Availability</span>
                 </button>
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Bot, LogOut, MessageSquare, User, Bell, PlusSquare } from 'lucide-react';
+import { Bot, LogOut, MessageSquare, User, Bell, PlusSquare, Sparkles } from 'lucide-react';
 
 import { type ActiveTab, useApp } from '../context/AppContext';
 
@@ -10,6 +10,7 @@ export const Navbar: React.FC = () => {
     isCopilotOpen, setIsCopilotOpen, isChatOpen, setIsChatOpen,
     isAuthenticated, currentUser, currentProfile, logout, unreadCount,
     totalUnreadChatCount, setIsCreateListingOpen, setIsNotificationsOpen,
+    subscription, openPricingModal,
   } = useApp();
 
   const isCoach = currentProfile?.role === 'coach';
@@ -112,6 +113,22 @@ export const Navbar: React.FC = () => {
             aria-label="Toggle copilot"
           >
             <Bot className="h-4 w-4" />
+          </button>
+
+          {/* Subscription Tier Badge */}
+          <button
+            onClick={() => openPricingModal('general')}
+            className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-extrabold uppercase tracking-wide transition ${
+              subscription.tier === 'pro' || subscription.tier === 'plus'
+                ? 'border-brand-accent/40 bg-brand-accent/15 text-brand-accent shadow-glow-accent'
+                : subscription.tier === 'basic'
+                ? 'border-blue-400/40 bg-blue-500/15 text-blue-400'
+                : 'border-white/10 bg-white/5 text-zinc-400 hover:text-white'
+            }`}
+            title="Subscription & Billing"
+          >
+            <Sparkles className="h-3 w-3" />
+            <span>{subscription.tier}</span>
           </button>
 
           {isAuthenticated ? (

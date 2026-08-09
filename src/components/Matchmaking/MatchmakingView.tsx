@@ -63,7 +63,16 @@ function computeFallbackScores(
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const MatchmakingView: React.FC = () => {
-  const { coachesList, isAuthenticated, selectedAthlete, setIsLoginOpen } = useApp();
+  const {
+    coachesList,
+    isAuthenticated,
+    selectedAthlete,
+    setIsLoginOpen,
+    subscription,
+    aiMatchmakingUsageCount,
+    incrementAiMatchmakingUsage,
+    openPricingModal,
+  } = useApp();
 
   const [quizState, setQuizState] = useState<QuizState>('quiz');
   const [matchedCoaches, setMatchedCoaches] = useState<AIMatchedCoach[]>([]);
@@ -93,6 +102,15 @@ export const MatchmakingView: React.FC = () => {
     if (!isAuthenticated) {
       setQuizState('unauthenticated');
       return;
+    }
+
+    // Check Free tier AI Matchmaking limit (5 runs max)
+    if (subscription.tier === 'free') {
+      const { isLimitReached } = incrementAiMatchmakingUsage();
+      if (isLimitReached || aiMatchmakingUsageCount >= 5) {
+        openPricingModal('matchmaking_limit');
+        return;
+      }
     }
 
     setQuizState('loading');

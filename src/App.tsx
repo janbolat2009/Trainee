@@ -124,6 +124,19 @@ const GlobalMeetingModal: React.FC = () => {
   );
 };
 
+import { PricingModal } from './components/Subscription/PricingModal';
+
+const GlobalPricingModal: React.FC = () => {
+  const { isPricingOpen, closePricingModal, pricingReason } = useApp();
+  return (
+    <PricingModal
+      isOpen={isPricingOpen}
+      onClose={closePricingModal}
+      triggerReason={pricingReason}
+    />
+  );
+};
+
 export function App() {
   return (
     <AppProvider>
@@ -140,6 +153,7 @@ export function App() {
         <ChatDrawer />
         <GlobalCoachModals />
         <GlobalMeetingModal />
+        <GlobalPricingModal />
         <NotificationCenter />
       </div>
     </AppProvider>

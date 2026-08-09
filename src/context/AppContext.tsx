@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 
 import type { Athlete, AthleteInsight, Coach, ConsultationBooking, FilterState, ReminderItem, UserRole } from '../types';
+import type { SubscriptionDetails, SubscriptionTier } from '../types/subscription';
+import { FREE_COPILOT_LIMIT, FREE_MATCHMAKING_LIMIT } from '../types/subscription';
 import { MOCK_ATHLETES, MOCK_COACHES } from '../data/mockData';
 import { supabase } from '../lib/supabase';
 import {
@@ -10,6 +12,14 @@ import {
   type AuthenticatedProfile,
 } from '../services/profileService';
 import { loadStoredReminders, saveStoredReminders } from '../services/reminderService';
+import {
+  fetchUserSubscription,
+  getStoredUsageCounters,
+  saveUsageCounters,
+  incrementVisitCount,
+  calculateSubscriptionDetails,
+  getStoredLocalTier,
+} from '../services/stripeService';
 
 export type ActiveTab =
   | 'home'
@@ -30,6 +40,8 @@ export interface AppNotification {
   timestamp: string;
   read: boolean;
 }
+
+export type PricingTriggerReason = 'copilot_limit' | 'matchmaking_limit' | 'student_limit' | 'visit_trigger' | 'general';
 
 interface AppContextType {
   activeTab: ActiveTab;
@@ -85,6 +97,17 @@ interface AppContextType {
   setIsCreateListingOpen: (open: boolean) => void;
   activeMeetingBooking: ConsultationBooking | null;
   setActiveMeetingBooking: (booking: ConsultationBooking | null) => void;
+  // Subscription & Pricing State
+  subscription: SubscriptionDetails;
+  refreshSubscription: () => Promise<void>;
+  isPricingOpen: boolean;
+  pricingReason: PricingTriggerReason;
+  openPricingModal: (reason?: PricingTriggerReason) => void;
+  closePricingModal: () => void;
+  aiCopilotUsageCount: number;
+  incrementAiCopilotUsage: () => { count: number; isLimitReached: boolean };
+  aiMatchmakingUsageCount: number;
+  incrementAiMatchmakingUsage: () => { count: number; isLimitReached: boolean };
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -137,6 +160,71 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   const [isNotificationsOpen, setIsNotificationsOpenState] = useState(false);
   const [reminders, setReminders] = useState<ReminderItem[]>(() => loadStoredReminders());
   const [athleteInsights, setAthleteInsights] = useState<AthleteInsight[]>([]);
+
+  // Subscription & Usage Limit State
+  const [subscription, setSubscription] = useState<SubscriptionDetails>(() =>
+    calculateSubscriptionDetails(getStoredLocalTier())
+  );
+  const [isPricingOpen, setIsPricingOpen] = useState(false);
+  const [pricingReason, setPricingReason] = useState<PricingTriggerReason>('general');
+  const [aiCopilotUsageCount, setAiCopilotUsageCount] = useState(() => getStoredUsageCounters().aiCopilotCount);
+  const [aiMatchmakingUsageCount, setAiMatchmakingUsageCount] = useState(() => getStoredUsageCounters().aiMatchmakingCount);
+
+  const openPricingModal = (reason: PricingTriggerReason = 'general') => {
+    setPricingReason(reason);
+    setIsPricingOpen(true);
+  };
+
+  const closePricingModal = () => setIsPricingOpen(false);
+
+  const refreshSubscription = async () => {
+    const profileId = currentProfile?.profile.id || '';
+    const details = await fetchUserSubscription(profileId);
+    setSubscription(details);
+  };
+
+  useEffect(() => {
+    if (currentProfile?.profile.id) {
+      void refreshSubscription();
+    }
+  }, [currentProfile?.profile.id]);
+
+  // Periodic 3rd visit trigger for Free users
+  useEffect(() => {
+    const { is3rdVisit } = incrementVisitCount();
+    if (is3rdVisit && subscription.tier === 'free') {
+      const timer = setTimeout(() => {
+        openPricingModal('visit_trigger');
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const incrementAiCopilotUsage = (): { count: number; isLimitReached: boolean } => {
+    const currentCounters = getStoredUsageCounters();
+    const nextCount = currentCounters.aiCopilotCount + 1;
+    saveUsageCounters({ ...currentCounters, aiCopilotCount: nextCount });
+    setAiCopilotUsageCount(nextCount);
+
+    const isLimitReached = subscription.tier === 'free' && nextCount >= FREE_COPILOT_LIMIT;
+    if (isLimitReached) {
+      openPricingModal('copilot_limit');
+    }
+    return { count: nextCount, isLimitReached };
+  };
+
+  const incrementAiMatchmakingUsage = (): { count: number; isLimitReached: boolean } => {
+    const currentCounters = getStoredUsageCounters();
+    const nextCount = currentCounters.aiMatchmakingCount + 1;
+    saveUsageCounters({ ...currentCounters, aiMatchmakingCount: nextCount });
+    setAiMatchmakingUsageCount(nextCount);
+
+    const isLimitReached = subscription.tier === 'free' && nextCount >= FREE_MATCHMAKING_LIMIT;
+    if (isLimitReached) {
+      openPricingModal('matchmaking_limit');
+    }
+    return { count: nextCount, isLimitReached };
+  };
 
   const isCoachRole = userRole === 'coach' || currentProfile?.role === 'coach';
   const activeTab = isCoachRole && activeTabRaw === 'home' ? 'coach-dashboard' : activeTabRaw;
@@ -415,6 +503,8 @@ useEffect(() => {
       isCreateListingOpen, setIsCreateListingOpen, activeMeetingBooking, setActiveMeetingBooking,
       isNotificationsOpen, setIsNotificationsOpen, reminders, addReminder, markReminderAsRead, dismissReminder, markReminderAsCompleted,
       athleteInsights, addAthleteInsight,
+      subscription, refreshSubscription, isPricingOpen, pricingReason, openPricingModal, closePricingModal,
+      aiCopilotUsageCount, incrementAiCopilotUsage, aiMatchmakingUsageCount, incrementAiMatchmakingUsage,
     }}>
       {children}
     </AppContext.Provider>

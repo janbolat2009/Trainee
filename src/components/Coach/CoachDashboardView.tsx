@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, FileText, Users, Bell, Plus, TrendingUp, Clock, CheckCircle2, AlertTriangle,
-  ChevronRight, Sparkles, ArrowRight, Calendar,
+  ChevronRight, Sparkles, ArrowRight, Calendar, CreditCard, ShieldCheck, ExternalLink
 } from 'lucide-react';
 import { fetchCoachListings, fetchCoachApplications } from '../../services/coachListingService';
 import { fetchCoachStudents, fetchStudentLogs } from '../../services/progressService';
@@ -11,6 +11,8 @@ import { fetchCoachBookings, saveConsultationReminder, saveConsultationFeedback 
 import { ReminderModal } from '../Notifications/ReminderModal';
 import { PostConsultationFeedbackModal } from '../Feedback/PostConsultationFeedbackModal';
 import type { CoachListing, ListingApplication, CoachStudent, ConsultationBooking, AthleteProgressLog } from '../../types';
+import type { StripeConnectAccountStatus } from '../../types/subscription';
+import { fetchCoachConnectStatus, createConnectAccount } from '../../services/stripeService';
 import { VideoMeetingModal } from '../Meetings/VideoMeetingModal';
 import { AthleteInsightsPanel } from './AthleteInsightsPanel';
 
@@ -34,6 +36,8 @@ export const CoachDashboardView: React.FC = () => {
   const [students, setStudents] = useState<CoachStudent[]>([]);
   const [bookings, setBookings] = useState<ConsultationBooking[]>([]);
   const [studentLogs, setStudentLogs] = useState<AthleteProgressLog[]>([]);
+  const [connectStatus, setConnectStatus] = useState<StripeConnectAccountStatus | null>(null);
+  const [isConnectingConnect, setIsConnectingConnect] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedReminderBooking, setSelectedReminderBooking] = useState<ConsultationBooking | null>(null);
   const [selectedFeedbackBooking, setSelectedFeedbackBooking] = useState<ConsultationBooking | null>(null);
@@ -46,22 +50,51 @@ export const CoachDashboardView: React.FC = () => {
     if (!coachProfileId) return;
     const load = async () => {
       setIsLoading(true);
-      const [l, a, s, b, logs] = await Promise.all([
+      const [l, a, s, b, logs, conn] = await Promise.all([
         fetchCoachListings(coachProfileId),
         fetchCoachApplications(coachProfileId),
         fetchCoachStudents(coachProfileId),
         fetchCoachBookings(coachProfileId),
         fetchStudentLogs(coachProfileId),
+        fetchCoachConnectStatus(coachProfileId),
       ]);
       setListings(l);
       setApplications(a);
       setStudents(s);
       setBookings(b);
       setStudentLogs(logs);
+      setConnectStatus(conn);
       setIsLoading(false);
     };
     void load();
   }, [coachProfileId]);
+
+  const handleConnectPayouts = async () => {
+    if (!coachProfileId) return;
+    setIsConnectingConnect(true);
+    try {
+      const res = await createConnectAccount(coachProfileId);
+      if (res.url) {
+        window.location.href = res.url;
+      } else if (res.success) {
+        addNotification({
+          type: 'success',
+          title: 'Stripe Express Connected',
+          message: 'Your payout account has been initialized and connected.',
+        });
+        const updated = await fetchCoachConnectStatus(coachProfileId);
+        setConnectStatus(updated);
+      }
+    } catch (err: any) {
+      addNotification({
+        type: 'risk',
+        title: 'Payout Setup Failed',
+        message: err?.message || 'Could not launch Stripe Express onboarding.',
+      });
+    } finally {
+      setIsConnectingConnect(false);
+    }
+  };
 
   useEffect(() => {
     if (isLoading) return;
@@ -107,6 +140,70 @@ export const CoachDashboardView: React.FC = () => {
             <Plus className="w-4 h-4" />
             <span>Create Listing</span>
           </button>
+        </motion.div>
+
+        {/* Payment Setup Card (Stripe Connect Express) */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-3xl border border-brand-border bg-brand-dark/90 p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+        >
+          <div className="flex items-start space-x-4">
+            <div className={`p-3 rounded-2xl border shrink-0 ${
+              connectStatus?.chargesEnabled
+                ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                : connectStatus?.stripeAccountId
+                ? 'bg-amber-400/15 border-amber-400/30 text-amber-400'
+                : 'bg-brand-accent/15 border-brand-accent/30 text-brand-accent'
+            }`}>
+              <CreditCard className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2">
+                <h3 className="text-base font-bold text-white">Payment Setup & Payouts</h3>
+                {connectStatus?.chargesEnabled ? (
+                  <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <ShieldCheck className="w-3 h-3" />
+                    <span>Connected</span>
+                  </span>
+                ) : connectStatus?.stripeAccountId ? (
+                  <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                    <Clock className="w-3 h-3" />
+                    <span>Verification in progress</span>
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-zinc-800 text-zinc-400 border border-zinc-700">
+                    Not Connected
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-zinc-400 max-w-xl leading-relaxed">
+                {connectStatus?.chargesEnabled
+                  ? 'Your Stripe Express account is fully connected. You receive 90% direct payouts per booked session.'
+                  : connectStatus?.stripeAccountId
+                  ? 'Stripe is reviewing your Express account verification details. Once verified, athletes can book paid sessions.'
+                  : 'Connect your bank account via Stripe Express to receive 90% direct payouts from session bookings.'}
+              </p>
+            </div>
+          </div>
+
+          {!connectStatus?.chargesEnabled && (
+            <button
+              disabled={isConnectingConnect}
+              onClick={handleConnectPayouts}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-accent text-black font-extrabold text-xs hover:bg-zinc-200 transition shadow-glow-accent flex items-center justify-center space-x-2 shrink-0 disabled:opacity-50"
+            >
+              {isConnectingConnect ? (
+                <span>Launching Setup...</span>
+              ) : (
+                <>
+                  <span>Connect payouts</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </>
+              )}
+            </button>
+          )}
         </motion.div>
 
         {/* Stats */}

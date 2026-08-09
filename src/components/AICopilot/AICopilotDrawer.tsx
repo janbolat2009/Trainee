@@ -82,6 +82,10 @@ export const AICopilotDrawer: React.FC = () => {
     filters,
     isAuthenticated,
     setIsLoginOpen,
+    subscription,
+    aiCopilotUsageCount,
+    incrementAiCopilotUsage,
+    openPricingModal,
   } = useApp();
 
   const isCoach = userRole === 'coach';
@@ -128,6 +132,23 @@ export const AICopilotDrawer: React.FC = () => {
       setIsTyping(false);
       setIsLoginOpen(true);
       return;
+    }
+
+    // Check Free tier AI limit (6 queries max)
+    if (subscription.tier === 'free') {
+      const { isLimitReached } = incrementAiCopilotUsage();
+      if (isLimitReached || aiCopilotUsageCount >= 6) {
+        const limitMsg: ChatMessage = {
+          id: `limit-${Date.now()}`,
+          sender: 'assistant',
+          text: '🔒 You have reached your free limit of 6 AI Copilot queries. Upgrade to Athlete Pro ($7.99/mo) for unlimited AI guidance!',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          suggestedPrompts: ['Upgrade to Pro'],
+        };
+        setMessages((prev) => [...prev, limitMsg]);
+        openPricingModal('copilot_limit');
+        return;
+      }
     }
 
     // Append user message

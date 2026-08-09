@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { X, Calendar, Clock3, MapPin, Laptop, CheckCircle2, AlertTriangle, Video } from 'lucide-react';
+import { X, Calendar, Clock3, MapPin, Laptop, CheckCircle2, AlertTriangle, Video, DollarSign, Lock } from 'lucide-react';
 import type { Athlete, Coach, ConsultationSlot, ConsultationFormat, ConsultationBooking } from '../../types';
+import type { StripeConnectAccountStatus } from '../../types/subscription';
 import { fetchCoachAvailabilitySlots, bookConsultation } from '../../services/bookingService';
 import { formatFullDateTimeInUserTimezone, formatTimeRangeInUserTimezone, getUserTimezoneOffset } from '../../lib/dateUtils';
 import { useApp } from '../../context/AppContext';
+import { createSessionPayment, fetchCoachConnectStatus } from '../../services/stripeService';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -28,19 +30,24 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [isBooking, setIsBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<ConsultationBooking | null>(null);
+  const [coachConnectStatus, setCoachConnectStatus] = useState<StripeConnectAccountStatus | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    const loadSlots = async () => {
+    const loadData = async () => {
       setIsLoading(true);
-      const data = await fetchCoachAvailabilitySlots(coach.id, coach.location ?? null);
+      const [data, conn] = await Promise.all([
+        fetchCoachAvailabilitySlots(coach.id, coach.location ?? null),
+        fetchCoachConnectStatus(coach.id),
+      ]);
       setSlots(data);
+      setCoachConnectStatus(conn);
       setSelectedSlotId(data.find((slot) => slot.format === selectedFormat)?.id ?? null);
       setIsLoading(false);
     };
 
-    void loadSlots();
+    void loadData();
   }, [isOpen, coach.id, coach.location, selectedFormat]);
 
   const availableSlots = useMemo(
@@ -85,6 +92,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         location: selectedSlot.location,
       });
 
+      // Record payment & calculate 10% platform commission
+      const sessionAmount = coach.hourlyRate || 50;
+      await createSessionPayment(booking.id, athleteProfile.id, coach.id, sessionAmount);
+
       setSuccess(booking);
       setActiveMeetingBooking(booking);
       onBookingCreated?.(booking);
@@ -105,8 +116,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       addReminder({ ...reminderBase, id: `reminder-${booking.id}-five`, scheduledFor: new Date(new Date(booking.startsAt).getTime() - 5 * 60 * 1000).toISOString(), title: `Starting soon: ${coach.name}`, message: 'Join your meeting in 5 minutes.', status: 'scheduled', isUnread: true, joinUrl: booking.format === 'online' ? '/meeting' : undefined });
       addNotification({
         type: 'success',
-        title: 'Consultation Requested',
-        message: `Your booking request for ${formatFullDateTimeInUserTimezone(booking.startsAt)} has been sent to ${coach.name}.`,
+        title: 'Session Payment & Booking Processed',
+        message: `Paid $${sessionAmount} ($${(sessionAmount * 0.10).toFixed(2)} platform fee retained). Session confirmed with ${coach.name}!`,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to create booking.');
@@ -267,6 +278,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               </div>
             )}
 
+            {coachConnectStatus && !coachConnectStatus.chargesEnabled && (
+              <div className="rounded-3xl border border-amber-400/20 bg-amber-400/10 p-4 text-xs text-amber-300 flex items-start gap-2.5">
+                <Lock className="w-4 h-4 mt-0.5 shrink-0 text-amber-400" />
+                <span>
+                  <strong>Coach Payment Setup Incomplete:</strong> This coach is currently verifying their Stripe Express payout account. Paid bookings will be enabled once verification completes.
+                </span>
+              </div>
+            )}
+
             {success ? (
               <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-200">
                 <div className="flex items-start gap-2">
@@ -281,10 +301,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <button
                 type="button"
                 onClick={handleBook}
-                disabled={isBooking || !selectedSlot || !isAuthenticated}
+                disabled={isBooking || !selectedSlot || !isAuthenticated || Boolean(coachConnectStatus && !coachConnectStatus.chargesEnabled)}
                 className="w-full rounded-3xl bg-brand-accent py-4 text-sm font-semibold text-black transition hover:bg-brand-accentHover disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isAuthenticated ? (isBooking ? 'Requesting Booking...' : 'Request Consultation') : 'Sign In to Book'}
+                {!isAuthenticated
+                  ? 'Sign In to Book'
+                  : coachConnectStatus && !coachConnectStatus.chargesEnabled
+                  ? 'Coach is completing payment setup'
+                  : isBooking
+                  ? 'Requesting Booking...'
+                  : 'Request Consultation'}
               </button>
             )}
 
