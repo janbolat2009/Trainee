@@ -206,15 +206,13 @@ import { ProGateBanner } from '../Subscription/ProGateBanner';
 // ── Main View ──────────────────────────────────────────────────────────────────
 
 export const CoachStudentsView: React.FC = () => {
-  const { currentProfile, addNotification, subscription, openPricingModal } = useApp();
+  const { currentProfile, addNotification } = useApp();
   const [students, setStudents] = useState<CoachStudent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRealtime, setIsRealtime] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   const coachProfileId = currentProfile?.profile.id ?? '';
-  const maxStudents = subscription.maxAthletes || 5;
-  const isAtCapacity = students.length >= maxStudents;
 
   const load = async () => {
     if (!coachProfileId) return;
@@ -274,12 +272,10 @@ export const CoachStudentsView: React.FC = () => {
             <h1 className="text-2xl font-semibold tracking-[-0.04em] text-white">My Students</h1>
             <div className="mt-1 flex items-center gap-2">
               <p className="text-sm text-zinc-400">
-                {students.length} / {maxStudents} active athletes
+                {students.length} active athletes
               </p>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase ${
-                isAtCapacity ? 'bg-amber-400/20 text-amber-400 border-amber-400/30' : 'bg-brand-accent/20 text-brand-accent border-brand-accent/30'
-              }`}>
-                {subscription.tier.replace('_', ' ')}
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase bg-brand-accent/20 text-brand-accent border-brand-accent/30">
+                Unlimited Capacity
               </span>
               {isRealtime && (
                 <span className="flex items-center gap-1 text-[10px] font-mono text-emerald-400">
@@ -291,12 +287,6 @@ export const CoachStudentsView: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => openPricingModal('student_limit')}
-              className="px-3 py-1.5 rounded-xl border border-brand-accent/30 bg-brand-accent/10 text-xs font-bold text-brand-accent hover:bg-brand-accent hover:text-black transition"
-            >
-              Upgrade Plan
-            </button>
-            <button
               onClick={() => void load()}
               className="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-border text-brand-muted hover:text-white hover:bg-white/10 transition"
             >
@@ -304,16 +294,6 @@ export const CoachStudentsView: React.FC = () => {
             </button>
           </div>
         </motion.div>
-
-        {/* Capacity banner */}
-        {isAtCapacity && (
-          <ProGateBanner
-            title="Athlete Capacity Reached"
-            description={`Your current plan (${subscription.tier.replace('_', ' ')}) allows up to ${maxStudents} athletes. Upgrade to Coach Pro for up to 25 active athletes!`}
-            requiredTier="Coach Pro ($29.99/mo)"
-            reason="student_limit"
-          />
-        )}
 
         {/* Info banner about Realtime */}
         {isRealtime && (

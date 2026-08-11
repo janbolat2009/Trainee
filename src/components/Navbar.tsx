@@ -115,21 +115,21 @@ export const Navbar: React.FC = () => {
             <Bot className="h-4 w-4" />
           </button>
 
-          {/* Subscription Tier Badge */}
-          <button
-            onClick={() => openPricingModal('general')}
-            className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-extrabold uppercase tracking-wide transition ${
-              subscription.tier === 'pro' || subscription.tier === 'plus'
-                ? 'border-brand-accent/40 bg-brand-accent/15 text-brand-accent shadow-glow-accent'
-                : subscription.tier === 'basic'
-                ? 'border-blue-400/40 bg-blue-500/15 text-blue-400'
-                : 'border-white/10 bg-white/5 text-zinc-400 hover:text-white'
-            }`}
-            title="Subscription & Billing"
-          >
-            <Sparkles className="h-3 w-3" />
-            <span>{subscription.tier}</span>
-          </button>
+          {/* Subscription Tier Badge (For Athletes) */}
+          {!isCoach && (
+            <button
+              onClick={() => openPricingModal('general')}
+              className={`hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-extrabold uppercase tracking-wide transition ${
+                subscription.tier === 'pro'
+                  ? 'border-brand-accent/40 bg-brand-accent/15 text-brand-accent shadow-glow-accent'
+                  : 'border-white/10 bg-white/5 text-zinc-400 hover:text-white'
+              }`}
+              title="Subscription & Billing"
+            >
+              <Sparkles className="h-3 w-3" />
+              <span>{subscription.tier === 'pro' ? 'Athlete Pro' : 'Free Tier'}</span>
+            </button>
+          )}
 
           {isAuthenticated ? (
             <>

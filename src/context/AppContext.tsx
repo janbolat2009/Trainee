@@ -41,7 +41,7 @@ export interface AppNotification {
   read: boolean;
 }
 
-export type PricingTriggerReason = 'copilot_limit' | 'matchmaking_limit' | 'student_limit' | 'visit_trigger' | 'general';
+export type PricingTriggerReason = 'copilot_limit' | 'matchmaking_limit' | 'visit_trigger' | 'general';
 
 interface AppContextType {
   activeTab: ActiveTab;

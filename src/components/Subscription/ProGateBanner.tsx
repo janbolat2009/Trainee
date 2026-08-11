@@ -6,13 +6,13 @@ export interface ProGateBannerProps {
   title?: string;
   description?: string;
   requiredTier?: string;
-  reason?: 'copilot_limit' | 'matchmaking_limit' | 'student_limit' | 'general';
+  reason?: 'copilot_limit' | 'matchmaking_limit' | 'general';
 }
 
 export const ProGateBanner: React.FC<ProGateBannerProps> = ({
   title = 'Pro Feature Locked',
-  description = 'Upgrade to Athlete Pro or Coach Pro to unlock full access to this feature.',
-  requiredTier = 'Pro Plan',
+  description = 'Upgrade to Athlete Pro to unlock full access to this feature.',
+  requiredTier = 'Athlete Pro ($7.99/mo)',
   reason = 'general',
 }) => {
   const { openPricingModal } = useApp();

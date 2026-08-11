@@ -10,8 +10,6 @@ import type {
 import {
   FREE_COPILOT_LIMIT,
   FREE_MATCHMAKING_LIMIT,
-  COACH_BASIC_ATHLETE_LIMIT,
-  COACH_PLUS_ATHLETE_LIMIT,
 } from '../types/subscription';
 
 const USAGE_STORAGE_KEY = 'trainee_subscription_usage_v1';
@@ -78,22 +76,14 @@ export const calculateSubscriptionDetails = (
   status: SubscriptionDetails['status'] = 'active'
 ): SubscriptionDetails => {
   const isAthletePro = tier === 'pro' && role === 'athlete' && status === 'active';
-  const isCoachBasic = tier === 'basic' && role === 'coach' && status === 'active';
-  const isCoachPlus = tier === 'plus' && role === 'coach' && status === 'active';
-
-  let maxAthletes = 0;
-  if (role === 'coach') {
-    if (isCoachPlus) maxAthletes = COACH_PLUS_ATHLETE_LIMIT;
-    else maxAthletes = COACH_BASIC_ATHLETE_LIMIT;
-  }
 
   return {
-    tier,
+    tier: role === 'coach' ? 'free' : tier,
     role,
     status,
-    maxAthletes,
-    hasAiPersonalization: isAthletePro || isCoachPlus || isCoachBasic,
-    hasProgressTracking: isAthletePro || isCoachPlus || isCoachBasic,
+    maxAthletes: role === 'coach' ? Infinity : 0,
+    hasAiPersonalization: isAthletePro || role === 'coach',
+    hasProgressTracking: isAthletePro || role === 'coach',
   };
 };
 

@@ -1,5 +1,5 @@
 export type SubscriptionRole = 'athlete' | 'coach';
-export type SubscriptionTier = 'free' | 'pro' | 'basic' | 'plus';
+export type SubscriptionTier = 'free' | 'pro';
 export type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete';
 
 export interface SubscriptionDetails {
@@ -9,7 +9,7 @@ export interface SubscriptionDetails {
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   currentPeriodEnd?: string;
-  maxAthletes: number; // 0 for athlete, 5 for coach basic, 15 for coach plus
+  maxAthletes: number; // Infinity for coaches (unlimited), 0 for athletes
   hasAiPersonalization: boolean;
   hasProgressTracking: boolean;
 }
@@ -41,10 +41,6 @@ export interface UsageCounters {
 
 export const FREE_COPILOT_LIMIT = 6;
 export const FREE_MATCHMAKING_LIMIT = 5;
-export const COACH_BASIC_ATHLETE_LIMIT = 5;
-export const COACH_PLUS_ATHLETE_LIMIT = 15;
 
-// Environment Price ID getters with fallback strings for test mode
+// Environment Price ID getters for Athlete Pro
 export const STRIPE_PRICE_ATHLETE_PRO = import.meta.env.VITE_STRIPE_PRICE_ATHLETE_PRO || 'price_athlete_pro_test';
-export const STRIPE_PRICE_COACH_BASIC = import.meta.env.VITE_STRIPE_PRICE_COACH_BASIC || 'price_coach_basic_test';
-export const STRIPE_PRICE_COACH_PLUS = import.meta.env.VITE_STRIPE_PRICE_COACH_PLUS || 'price_coach_plus_test';
